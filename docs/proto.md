@@ -101,9 +101,9 @@ Data will be:
 | Display Address on ledger?         |       1        | 0 or 1      | 0 = no show, 1 = display              |
 | Address type                       |       1        | 1 or 2 or 3 | 1 = default, 2 = contract, 3 = P2SH   |
 | # Of Bip32 paths                   |       1        |             |                                       |
-| First Derivation path              |       1        |             |    bigendian encoded                  |
-|               ...                  |       1        |             |           ^^                          |
-| Last Derivation path               |       1        |             |           ^^                          |
+| First Derivation path              |       4        |             |    bigendian encoded                  |
+|               ...                  |       4        |             |           ^^                          |
+| Last Derivation path               |       4        |             |           ^^                          |
 
 Depending on the Display flag, the command will either return immediately or asynchronously after user confirmation.
 
