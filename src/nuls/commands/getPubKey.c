@@ -12,7 +12,6 @@
 #include "../approval.h"
 #include "os.h"
 
-uint8_t pubKeyResponseBuffer[32];
 
 static const bagl_element_t verify_address_ui[] = {
   CLEAN_SCREEN,
@@ -33,8 +32,7 @@ static void createPublicKeyResponse() {
   addToResponse(&reqContext.chainCode, 32);
 
   //PubKey
-  nuls_encoded_publicKey(&reqContext.publicKey, pubKeyResponseBuffer);
-  addToResponse(pubKeyResponseBuffer, 32);
+  addToResponse(reqContext.compressedPublicKey, 33);
 
   //Base58Address
   addToResponse(&reqContext.address, 32);
@@ -75,8 +73,12 @@ void handleGetPublicKey(volatile unsigned int *flags, commPacket_t *packet) {
           &reqContext.privateKey, &reqContext.publicKey, reqContext.chainCode);
   //Paranoid
   os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
-  //Pubkey -> Address
-  nuls_public_key_to_encoded_base58(&reqContext.publicKey, reqContext.chainId,
+
+  //Gen Compressed PubKey
+  nuls_compress_publicKey(&reqContext.publicKey, reqContext.compressedPublicKey);
+
+  //Compressed PubKey -> Address
+  nuls_public_key_to_encoded_base58(reqContext.compressedPublicKey, reqContext.chainId,
           reqContext.addressVersion, reqContext.address);
   reqContext.address[32] = '\0';
 

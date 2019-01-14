@@ -9,13 +9,14 @@
 typedef struct reqContext_t {
     cx_ecfp_private_key_t privateKey;
     cx_ecfp_public_key_t publicKey;
+    uint8_t compressedPublicKey[33];
     uint8_t chainCode[32];
     uint8_t bip32pathLength;
     uint32_t bip32path[MAX_BIP32_PATH];
     uint8_t showConfirmation;
     uint16_t chainId;
     uint8_t addressVersion;
-    uint8_t address[32];
+    uint8_t address[33];
     uint16_t signableContentLength;
     uint8_t reserved;
 
@@ -32,7 +33,7 @@ extern reqContext_t reqContext;
  * @param publicKey the raw public key containing both coordinated for the elliptic curve
  * @param encoded result holder
  */
-void nuls_encoded_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded);
+void nuls_compress_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded);
 
 
 /**
@@ -40,7 +41,7 @@ void nuls_encoded_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encode
  * @param publicKey original publicKey
  * @param the encoded address.
  */
-unsigned short nuls_public_key_to_encoded_base58(cx_ecfp_public_key_t *publicKey, uint16_t chainId, uint8_t addressVersion, uint8_t *out_address);
+unsigned short nuls_public_key_to_encoded_base58(uint8_t *compressedPublicKey, uint16_t chainId, uint8_t addressVersion, uint8_t *out_address);
 
 /**
  * Reads the packet for Sign requests (tx and msg), sets the reqContext and patches the packet data values by skipping the header.

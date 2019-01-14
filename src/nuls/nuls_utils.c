@@ -36,7 +36,7 @@ void nuls_write_u16_le(unsigned char *buffer, unsigned long int value) {
 }
 */
 
-void nuls_encoded_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded) {
+void nuls_compress_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded) {
   os_memmove(out_encoded, publicKey->W, 33);
   out_encoded[0] = ((publicKey->W[64] & 1) ? 0x03 : 0x02);
 }
@@ -63,19 +63,17 @@ uint8_t getxor(uint8_t *buffer, uint8_t length) {
 }
 
 unsigned short nuls_public_key_to_encoded_base58 (
-        cx_ecfp_public_key_t *publicKey,
+        uint8_t *compressedPublicKey,
         uint16_t chainId, uint8_t addressVersion,
         uint8_t *out_address) {
   unsigned char tmpBuffer[24];
-  unsigned char compressedPubKey[33];
   tmpBuffer[0] = chainId;
   tmpBuffer[1] = (chainId >> 8);
   tmpBuffer[2] = addressVersion;
 
-//  PRINTF("RAW PubKey %.*H\n", 65, publicKey->W);
-  nuls_encoded_publicKey(publicKey, compressedPubKey);
-//  PRINTF("COMPRESSED %.*H\n", 33, compressedPubKey);
-  nuls_public_key_hash160(compressedPubKey, 33, tmpBuffer + 3);
+//  PRINTF("RAW PubKey %.*H\n", 65, &reqContext.publicKey->W);
+//  PRINTF("COMPRESSED %.*H\n", 33, compressedPublicKey);
+  nuls_public_key_hash160(compressedPublicKey, 33, tmpBuffer + 3);
 
 //  PRINTF("tmpbuffer0,1,2 %.*H\n", 3, tmpBuffer);
 //  PRINTF("hash %.*H\n", 23, tmpBuffer);
