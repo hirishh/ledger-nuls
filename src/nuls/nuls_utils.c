@@ -37,13 +37,8 @@ void nuls_write_u16_le(unsigned char *buffer, unsigned long int value) {
 */
 
 void nuls_encoded_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded) {
-  uint8_t i;
-  for (i = 0; i < 32; i++) {
-    out_encoded[i] = publicKey->W[64 - i];
-  }
-  if ((publicKey->W[32] & 1) != 0) {
-    out_encoded[31] |= 0x80;
-  }
+  os_memmove(out_encoded, publicKey->W, 33);
+  out_encoded[0] = ((publicKey->W[64] & 1) ? 0x03 : 0x02);
 }
 
 void nuls_public_key_hash160(unsigned char *in, unsigned short inlen, unsigned char *out) {
@@ -56,7 +51,7 @@ void nuls_public_key_hash160(unsigned char *in, unsigned short inlen, unsigned c
   cx_sha256_init(&u.shasha);
   cx_hash(&u.shasha.header, CX_LAST, in, inlen, buffer, 32);
   cx_ripemd160_init(&u.riprip);
-  cx_hash(&u.riprip.header, CX_LAST, buffer, 32, out, 32);
+  cx_hash(&u.riprip.header, CX_LAST, buffer, 32, out, 20);
 }
 
 uint8_t getxor(uint8_t *buffer, uint8_t length) {
@@ -72,18 +67,28 @@ unsigned short nuls_public_key_to_encoded_base58 (
         uint16_t chainId, uint8_t addressVersion,
         uint8_t *out_address) {
   unsigned char tmpBuffer[24];
+  unsigned char compressedPubKey[33];
   tmpBuffer[0] = chainId;
   tmpBuffer[1] = (chainId >> 8);
   tmpBuffer[2] = addressVersion;
-  nuls_public_key_hash160(publicKey->W, publicKey->W_len, tmpBuffer + 3);
 
-  // L_DEBUG_BUF(("PubKeyHash\n", tmpBuffer, 4));
+//  PRINTF("RAW PubKey %.*H\n", 65, publicKey->W);
+  nuls_encoded_publicKey(publicKey, compressedPubKey);
+//  PRINTF("COMPRESSED %.*H\n", 33, compressedPubKey);
+  nuls_public_key_hash160(compressedPubKey, 33, tmpBuffer + 3);
+
+//  PRINTF("tmpbuffer0,1,2 %.*H\n", 3, tmpBuffer);
+//  PRINTF("hash %.*H\n", 23, tmpBuffer);
   tmpBuffer[23] = getxor(tmpBuffer, 23);
+//  PRINTF("XOR %d\n", tmpBuffer[23]);
+
 
   size_t outputLen = 32;
   if (nuls_encode_base58(tmpBuffer, 24, out_address, &outputLen) < 0) {
     THROW(EXCEPTION);
   }
+//  PRINTF("Base58 %s\n", out_address);
+
   return outputLen;
 }
 
