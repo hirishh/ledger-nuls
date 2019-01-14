@@ -1,6 +1,6 @@
 #include <string.h>
 #include "os_io_seproxyhal.h"
-#include "nulsutils.h"
+#include "nuls_utils.h"
 #include "../glyphs.h"
 #include "../ui_utils.h"
 

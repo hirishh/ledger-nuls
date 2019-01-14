@@ -91,8 +91,33 @@ All Nuls Commands must be sent through the `Encapsulation Protocol` as specified
 All commands will accept bip32 path as input parameter. BIP32 Path is encoded using **hardened** keys encoded in BigEndian Format.
 
 ### Get Public Key/Address
+This command let you have the publickey associated to a specific bip32 path.
 
-TODO
+Data will be:
+
+|  Description                       | Length (bytes) |  Data       |      Info                             |
+|------------------------------------|----------------|-------------|---------------------------------------|
+| Command                            |       1        |   04        |                                       |
+| Display Address on ledger?         |       1        | 0 or 1      | 0 = no show, 1 = display              |
+| Address type                       |       1        | 1 or 2 or 3 | 1 = default, 2 = contract, 3 = P2SH   |
+| # Of Bip32 paths                   |       1        |             |                                       |
+| First Derivation path              |       1        |             |    bigendian encoded                  |
+|               ...                  |       1        |             |           ^^                          |
+| Last Derivation path               |       1        |             |           ^^                          |
+
+Depending on the Display flag, the command will either return immediately or asynchronously after user confirmation.
+
+
+```
+ 04 -> command
+   00 -> no show
+     01 -> default address
+       x -> number of paths in bip32 string
+        x*4 -> bigendian uint32 paths
+```
+
+The **result** will show chainCode, publicKey, address and  using the *Result Response Protocol*
+
 
 ### Signing
 
