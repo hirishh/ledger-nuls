@@ -1,0 +1,17 @@
+
+#ifndef BTCHIP_HELPERS_H
+#define BTCHIP_HELPERS_H
+
+void nuls_write_u32_be(unsigned char *buffer, unsigned long int value);
+
+void nuls_write_u32_le(unsigned char *buffer, unsigned long int value);
+
+void nuls_write_u16_be(unsigned char *buffer, unsigned long int value);
+
+void nuls_write_u16_le(unsigned char *buffer, unsigned long int value);
+
+unsigned long int nuls_read_u16(unsigned char *buffer, unsigned char be, unsigned char skipSign);
+
+unsigned long int nuls_read_u32(unsigned char *buffer, unsigned char be, unsigned char skipSign);
+
+#endif

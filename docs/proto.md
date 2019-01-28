@@ -121,4 +121,17 @@ The **result** will show chainCode, publicKey, address and  using the *Result Re
 
 ### Signing
 
-TODO
+With the signing commands you can sign both transactions and messages.
+
+**Request**
+
+|  Description                       | Length (bytes) |             Info                    |
+|------------------------------------|----------------|-------------------------------------|
+| Command                            |       1        |  05 (sign p2pkh tx) 06 (sign msg)   |
+| # Of Bip32 paths                   |       1        |                                     |
+| First Derivation path              |       1        |                                     |
+|               ...                  |       1        |                                     |
+| Last Derivation path               |       1        |                                     |
+| Data Length (BigEndian)            |       2        |                                     |
+| Data                               |       _        |  tx bytes or message bytes          |
+

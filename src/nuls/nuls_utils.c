@@ -5,6 +5,7 @@
 #include "os.h"
 #include "cx.h"
 #include "nuls_utils.h"
+#include "nuls_helpers.h"
 #include "nuls_base58.h"
 #include "../io.h"
 
@@ -35,6 +36,25 @@ void nuls_write_u16_le(unsigned char *buffer, unsigned long int value) {
   buffer[1] = ((value >> 8) & 0xff);
 }
 */
+
+unsigned short int nuls_read_u16(unsigned char *buffer, unsigned char be, unsigned char skipSign) {
+  unsigned char i;
+  unsigned long int result = 0;
+  unsigned char shiftValue = (be ? 24 : 0);
+  for (i = 0; i < 4; i++) {
+    unsigned char x = (unsigned char)buffer[i];
+    if ((i == 0) && skipSign) {
+      x &= 0x7f;
+    }
+    result += ((unsigned long int)x) << shiftValue;
+    if (be) {
+      shiftValue -= 8;
+    } else {
+      shiftValue += 8;
+    }
+  }
+  return result;
+}
 
 void nuls_compress_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded) {
   os_memmove(out_encoded, publicKey->W, 33);
@@ -91,34 +111,38 @@ unsigned short nuls_public_key_to_encoded_base58 (
 }
 
 uint32_t setReqContextForSign(commPacket_t *packet) {
-  /*
-  // reset current result
-  uint8_t tmp[256];
+
+  //reset digest
   os_memset(&reqContext.digest, 0, 32);
-  uint32_t bytesRead = derivePrivatePublic(packet->data, &reqContext.privateKey, &reqContext.publicKey);
-  reqContext.signableContentLength = (*(packet->data + bytesRead)) << 8;
-  reqContext.signableContentLength += (*(packet->data + bytesRead + 1));
+
+  //Read bip32path
+  reqContext.bip32pathLength = packet->data[0];
+  uint8_t bip32DataBuffer[256];
+  os_memmove(bip32DataBuffer, packet->data + 1, reqContext.bip32pathLength * 4);
+
+  uint32_t bytesRead = 1 + /* pathLength */
+                       reqContext.bip32pathLength * 4;
+
+  // Check signable content length if is correct
+  //Data Length
+  reqContext.signableContentLength = nuls_read_u16(packet->data + bytesRead, 1, 0);
   if (reqContext.signableContentLength >= commContext.totalAmount) {
     THROW(0x6700); // INCORRECT_LENGTH
   }
   bytesRead += 2;
-  reqContext.reserved = *(packet->data + bytesRead);
-  bytesRead++;
 
   // clean up packet->data by removing the consumed content (sign context)
-  os_memmove(tmp, packet->data + bytesRead, packet->length - bytesRead);
-  os_memmove(packet->data, tmp, packet->length - bytesRead);
-  packet->length -= bytesRead;
+  uint8_t tmpBuffer[256];
+  os_memmove(tmpBuffer, packet->data + bytesRead, packet->length - bytesRead);
+  os_memmove(packet->data, tmpBuffer, packet->length - bytesRead);
 
   return bytesRead;
-   */
-  return 0;
 }
 
 void setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.showConfirmation = packet->data[0];
   reqContext.addressVersion = packet->data[1];
-  reqContext.bip32pathLength  = packet->data[2];
+  reqContext.bip32pathLength = packet->data[2];
 
   uint8_t bip32DataBuffer[256];
   os_memmove(bip32DataBuffer, packet->data + 3, packet->length - 3);

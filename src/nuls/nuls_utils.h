@@ -17,8 +17,9 @@ typedef struct reqContext_t {
     uint16_t chainId;
     uint8_t addressVersion;
     uint8_t address[33];
+
+    //For signature
     uint16_t signableContentLength;
-    uint8_t reserved;
 
     // Holds digest to sign
     uint8_t digest[32];
@@ -27,6 +28,8 @@ typedef struct reqContext_t {
 extern reqContext_t reqContext;
 
 #endif
+
+unsigned long int nuls_read_u16(unsigned char *buffer, unsigned char be, unsigned char skipSign);
 
 /**
  * Gets a bigendian representation of the usable publicKey
