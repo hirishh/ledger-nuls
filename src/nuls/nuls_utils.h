@@ -29,8 +29,6 @@ extern reqContext_t reqContext;
 
 #endif
 
-unsigned long int nuls_read_u16(unsigned char *buffer, unsigned char be, unsigned char skipSign);
-
 /**
  * Gets a bigendian representation of the usable publicKey
  * @param publicKey the raw public key containing both coordinated for the elliptic curve

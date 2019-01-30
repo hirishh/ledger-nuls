@@ -6,23 +6,42 @@
 
 #define NEED_NEXT_CHUNK 0x6866
 
+#define ADDRESS_LENGTH 23
+#define HASH_LENGTH 34
+
 /**
  * Current state of an untrusted transaction hashing
  */
 
-enum transaction_parsing_state_e {
+enum transaction_parsing_group_e {
     /** No transaction in progress */
+    COMMON = 0x00,
+    TX_SPECIFIC = 0x01,
+    COIN_INPUT = 0x02,
+    COIN_OUTPUT = 0x03,
+    CHECK_SANITY_BEFORE_SIGN = 0x04
+};
+typedef enum transaction_parsing_group_e transaction_parsing_group_t;
+
+enum transaction_parsing_state_e {
+    /** No transaction in progress. Used also as group start*/
     BEGINNING = 0x00,
     /** Commmon Fields */
     FIELD_TYPE
     FIELD_TIME
     FIELD_REMARK_LENGTH
     FIELD_REMARK
-    /** Data Fields */
+    /** Data Fields - TX Specifics */
     PLACEHOLDER
     //TODO for other TXs
-    /** COIN: Input & OUTPUT */
-    FIELD_INPUT_SIZE
+    /** COIN: Input & Output */
+    INPUT_OWNER_DATA_LENGTH
+    INPUT_DATA
+
+    FIELD_COIN_OUTPUT_SIZE
+    PARSE_COIN_DATA_LENGTH
+    PARSE_COIN_DATA
+    /** COIN: Input & Output */
     //TODO
     /** Ready to be signed */
     READY_TO_SIGN
@@ -34,14 +53,22 @@ typedef struct transaction_context {
     /** Type of the transaction */
     uint16_t type;
 
+    /** Group of the transaction parsing, type transaction_parsing_group_t */
+    uint8_t tx_parsing_group;
+
     /** State of the transaction parsing, type transaction_parsing_state_t */
     uint8_t tx_parsing_state;
 
     /** Remaining number of inputs/outputs to process for this transaction */
-    unsigned long int transactionRemainingInputsOutputs;
+    unsigned long int remainingInputsOutputs;
 
     /** Index of the currently processed input/output for this transaction */
-    unsigned long int transactionCurrentInputOutput;
+    unsigned long int currentInputOutput;
+
+    /** Length of the currently processed input/output for this transaction */
+    unsigned long int currentInputOutputOwnerLength;
+
+    unsigned char inputOutputValue[8];
 
     /** Computed sum of transaction inputs */
     unsigned char totalInputAmount[8];
@@ -68,10 +95,10 @@ typedef struct transaction_context {
     /** Fields to Display  */
     unsigned char remark[30];
     uint64_t remarkSize;
-    unsigned char fees[8];           // only in wallet mode
-    unsigned char changeAmount[8];   // only in wallet mode
-    unsigned char outputAddress[21]; // only in wallet mode
-    unsigned char changeAddress[21]; // only in wallet mode
+    unsigned char fees[8];
+    unsigned char changeAmount[8];
+    unsigned char outputAddress[21];
+    unsigned char changeAddress[21];
 
 } transaction_context_t;
 
@@ -85,11 +112,5 @@ extern ui_processor_fn ui_processor;
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context);
 void finalizeSignTx(volatile unsigned int *flags);
-
-// Parser Utils
-
-void transaction_offset_increase(unsigned char value);
-void is_available_to_parse(unsigned char x);
-unsigned long int transaction_get_varint(void);
 
 #endif //PROJECT_SIGNTX_H

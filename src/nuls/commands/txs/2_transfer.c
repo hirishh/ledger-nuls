@@ -3,10 +3,12 @@
 //
 
 #include "2_transfer.h"
-#include "../../dposutils.h"
 #include "../../../io.h"
 #include "../../../ui_utils.h"
 #include "../../ui_elements_s.h"
+#include "../../nuls_utils.h"
+#include "../../nuls_helpers.h"
+#include "nuls_tx_parser.h"
 #include "../signTx.h"
 
 /**
@@ -57,82 +59,61 @@ static void uiProcessor_send(uint8_t step) {
   }
 }
 
-void tx_chunk_transfer() {
+void tx_parse_specific_2_transfer() {
 
   /* TX Structure:
    *
+   * COMMON
    * - type -> 2 Bytes
    * - time -> 6 Bytes
    * - remarkLength -> 1 Byte
    * - remark -> remarkLength Bytes (max 30 bytes)
-   * Then, for this TX:
+   *
+   * TX_SPECIFIC (handled here)
    * - placeholder -> 4 bytes (0xFFFFFFFF)
-   * Then, coin info
-   * -
+   *
+   * COIN_INPUT
+   * - owner (hash + index)
+   * - amount
+   * - locktime
+   * COIN_OUTPUT
+   * - owner (address or script)
+   * - amount
+   * - locktime
    * */
 
   //TODO Handle saveBufferForNextChunk
+
 
   //NB: There are no break in this switch. This is intentional.
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      // Reset transaction state
-      txContext.transactionRemainingInputsOutputs = 0;
-      txContext.transactionCurrentInputOutput = 0;
-
-      os_memset(
-              txContext.totalInputAmount,
-              0, sizeof(txContext.totalInputAmount));
-      os_memset(
-              txContext.totalInputAmount,
-              0, sizeof(txContext.totalOutputAmount));
-      //Done, start with the next field
-      txContext.tx_parsing_state = FIELD_TYPE;
-
-    case FIELD_TYPE:
-      //already parsed..
-      is_available_to_parse(2);
-      transaction_offset_increase(2);
-      txContext.tx_parsing_state =  FIELD_TIME;
-
-    case FIELD_TIME:
-      is_available_to_parse(6);
-      transaction_offset_increase(6);
-      txContext.tx_parsing_state = FIELD_REMARK_LENGTH;
-
-    case FIELD_REMARK_LENGTH:
-      //Size
-      txContext.remarkSize = transaction_get_varint();
-      txContext.tx_parsing_state = FIELD_REMARK;
-
-    case FIELD_REMARK:
-      if(txContext.remarkSize != 0) {
-        is_available_to_parse(txContext.remarkSize)
-        os_memmove(txContext.remark, txContext.buffer, txContext.remarkSize)
-        transaction_offset_increase(txContext.remarkSize);
-      }
+      // Only PLACEHOLDER for this TX type
       txContext.tx_parsing_state = PLACEHOLDER;
 
     case PLACEHOLDER:
       is_available_to_parse(4)
+      uint32_t placeholder = nuls_read_u32(txContext.buffer, 1, 0);
+      if(placeholder != 0xFFFFFFFF)
+        THROW(INVALID_PARAMETER);
       transaction_offset_increase(4);
-      txContext.tx_parsing_state = FIELD_INPUT_SIZE;
 
-    case FIELD_COIN_INPUT_LENGTH:
-      txContext.transactionRemainingInputsOutputs = transaction_get_varint();
-      txContext.tx_parsing_state = FIELD_INPUT;
-
-      //TODO
-    default:
+      //It's time for CoinData
+      txContext.tx_parsing_group = COIN_INPUT
+      txContext.tx_parsing_state = COIN_INPUT_SIZE;
       break;
+
+    default:
+      THROW(INVALID_STATE)
   }
 
 }
 
-void tx_end_transfer() {
+void tx_finalize_2_transfer() {
 
-  //Check tx_parsing_state
+  if(txContext.tx_parsing_state != READY_TO_SIGN)
+    THROW(INVALID_STATE);
 
   ux.elements = ui_send_nano;
   ux.elements_count = 11;

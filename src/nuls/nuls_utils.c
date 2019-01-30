@@ -11,51 +11,6 @@
 
 reqContext_t reqContext;
 
-/*
-void nuls_write_u32_be(unsigned char *buffer, unsigned long int value) {
-  buffer[0] = ((value >> 24) & 0xff);
-  buffer[1] = ((value >> 16) & 0xff);
-  buffer[2] = ((value >> 8) & 0xff);
-  buffer[3] = (value & 0xff);
-}
-
-void nuls_write_u32_le(unsigned char *buffer, unsigned long int value) {
-  buffer[0] = (value & 0xff);
-  buffer[1] = ((value >> 8) & 0xff);
-  buffer[2] = ((value >> 16) & 0xff);
-  buffer[3] = ((value >> 24) & 0xff);
-}
-
-void nuls_write_u16_be(unsigned char *buffer, unsigned long int value) {
-  buffer[0] = ((value >> 8) & 0xff);
-  buffer[1] = (value & 0xff);
-}
-
-void nuls_write_u16_le(unsigned char *buffer, unsigned long int value) {
-  buffer[0] = (value & 0xff);
-  buffer[1] = ((value >> 8) & 0xff);
-}
-*/
-
-unsigned short int nuls_read_u16(unsigned char *buffer, unsigned char be, unsigned char skipSign) {
-  unsigned char i;
-  unsigned long int result = 0;
-  unsigned char shiftValue = (be ? 24 : 0);
-  for (i = 0; i < 4; i++) {
-    unsigned char x = (unsigned char)buffer[i];
-    if ((i == 0) && skipSign) {
-      x &= 0x7f;
-    }
-    result += ((unsigned long int)x) << shiftValue;
-    if (be) {
-      shiftValue -= 8;
-    } else {
-      shiftValue += 8;
-    }
-  }
-  return result;
-}
-
 void nuls_compress_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded) {
   os_memmove(out_encoded, publicKey->W, 33);
   out_encoded[0] = ((publicKey->W[64] & 1) ? 0x03 : 0x02);
@@ -142,6 +97,10 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
 void setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.showConfirmation = packet->data[0];
   reqContext.addressVersion = packet->data[1];
+
+  //TODO Implement P2SH. At the moment is not supported
+  if(reqContext.addressVersion != 0x01)
+
   reqContext.bip32pathLength = packet->data[2];
 
   uint8_t bip32DataBuffer[256];

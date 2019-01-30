@@ -14,4 +14,6 @@ unsigned long int nuls_read_u16(unsigned char *buffer, unsigned char be, unsigne
 
 unsigned long int nuls_read_u32(unsigned char *buffer, unsigned char be, unsigned char skipSign);
 
+void nuls_swap_bytes(unsigned char *target, unsigned char *source, unsigned char size);
+
 #endif

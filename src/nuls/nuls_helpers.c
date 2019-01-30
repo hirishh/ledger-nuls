@@ -63,3 +63,10 @@ unsigned long int nuls_read_u32(unsigned char *buffer, unsigned char be, unsigne
   }
   return result;
 }
+
+void nuls_swap_bytes(unsigned char *target, unsigned char *source, unsigned char size) {
+  unsigned char i;
+  for (i = 0; i < size; i++) {
+    target[i] = source[size - 1 - i];
+  }
+}

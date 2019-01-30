@@ -5,6 +5,7 @@
 #include "signTx.h"
 #include "../../io.h"
 #include "../nuls_utils.h"
+#include "txs/nuls_tx_parser.h"
 #include "txs/2_transfer.h"
 // #include "./txs/voteTx.h"
 // #include "./txs/createMultiSig.h"
@@ -73,13 +74,14 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     txContext.type = nuls_read_u16(packet->data, 1, 0);
     txContext.totalTxBytes = reqContext.signableContentLength;
     txContext.tx_parsing_state = BEGINNING;
+    txContext.tx_parsing_group = COMMON;
     txContext.bytesRead = 0;
     txContext.saveBufferLength = 0;
 
     switch (txContext.type) {
       case TX_TYPE_TRANSFER_TX:
-        tx_chunk = tx_chunk_transfer;
-        tx_end = tx_end_transfer;
+        tx_chunk = tx_parse_specific_2_transfer;
+        tx_end = tx_finalize_2_transfer;
         break;
       default:
         THROW(NOT_SUPPORTED);
@@ -92,7 +94,20 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
   BEGIN_TRY {
       TRY {
-          tx_chunk();
+          switch(txContext.tx_parsing_group) {
+            case COMMON:
+              parse_group_common();
+            case TX_SPECIFIC:
+              tx_chunk();
+            case COIN_INPUT:
+              parse_group_coin_input();
+            case COIN_OUTPUT:
+              parse_group_coin_output();
+            case CHECK_SANITY_BEFORE_SIGN:
+              check_sanity_before_sign();
+            default:
+              THROW(INVALID_STATE);
+          }
         }
       CATCH_OTHER(e) {
           if(e == NEED_NEXT_CHUNK) {
@@ -141,47 +156,4 @@ void finalizeSignTx(volatile unsigned int *flags) {
   ui_processor(1);
   UX_WAKE_UP();
   UX_REDISPLAY();
-}
-
-
-// Parser Utils
-
-void transaction_offset_increase(unsigned char value) {
-  txContext.buffer += value;
-  txContext.bytesChunkRemaining -= value;
-}
-
-void is_available_to_parse(unsigned char x) {
-  if(txContext.bytesChunkRemaining >= x)
-    return true;
-  else
-    THROW(NEED_NEXT_CHUNK);
-}
-
-unsigned long int transaction_get_varint(void) {
-  unsigned char firstByte;
-  is_available_to_parse(1);
-  firstByte = *txContext.buffer;
-  if (firstByte < 0xFD) {
-    transaction_offset_increase(1);
-    return firstByte;
-  } else if (firstByte == 0xFD) {
-    unsigned long int result;
-    transaction_offset_increase(1);
-    is_available_to_parse(2);
-    result = (unsigned long int)(*txContext.buffer) |
-             ((unsigned long int)(*(txContext.buffer + 1)) << 8);
-    transaction_offset_increase(2);
-    return result;
-  } else if (firstByte == 0xFE) {
-    unsigned long int result;
-    transaction_offset_increase(1);
-    is_available_to_parse(4);
-    result = nuls_read_u32(txContext.buffer, 0, 0);
-    transaction_offset_increase(4);
-    return result;
-  } else {
-    L_DEBUG_APP(("Varint parsing failed\n"));
-    THROW(INVALID_PARAMETER);
-  }
 }

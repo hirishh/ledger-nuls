@@ -3,7 +3,7 @@
 #ifndef NULS_TX_TRANSFER_H
 #define NULS_TX_TRANSFER_H
 
-void tx_chunk_transfer(uint8_t * data);
-void tx_end_transfer();
+void tx_parse_specific_2_transfer();
+void tx_finalize_2_transfer();
 
 #endif //NULS_TX_TRANSFER_H
