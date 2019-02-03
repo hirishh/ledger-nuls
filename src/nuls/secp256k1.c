@@ -6,14 +6,6 @@
 
 #define LIBN_CURVE CX_CURVE_SECP256K1
 
-/**
- *
- * @param bip32Path
- * @param bip32PathLength
- * @param privateKey
- * @param publicKey
- * @return read data to derive private public
- */
 void nuls_private_derive_keypair(uint32_t *bip32Path, uint8_t bip32PathLength, cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *publicKey, uint8_t *out_chainCode) {
   uint8_t privateKeyData[32];
   os_perso_derive_node_bip32(LIBN_CURVE, bip32Path, bip32PathLength, privateKeyData, out_chainCode);
@@ -44,15 +36,16 @@ void nuls_bip32_buffer_to_array(uint8_t *bip32DataBuffer, uint8_t bip32PathLengt
   }
 }
 
-/**
- * Signs an arbitrary message given the privateKey and the info
- * @param privateKey the privateKey to be used
- * @param whatToSign the message to sign
- * @param length the length of the message ot sign
- * @param isTx wether we're signing a tx or a text
- * @param output
- */
-void sign(cx_ecfp_private_key_t *privateKey, void *whatToSign, uint32_t length, unsigned char *output) {
-  // 2nd param was null
-  cx_eddsa_sign(privateKey, 0, CX_SHA512, whatToSign, length, NULL, 0, output, CX_SHA512_SIZE, NULL);
+void nuls_signverify_finalhash(cx_ecfp_private_key_t *privateKey, unsigned char sign,
+        unsigned char *in, unsigned short inlen,
+        unsigned char *out, unsigned short outlen) {
+  if(sign) {
+    unsigned int info = 0;
+    cx_ecdsa_sign(privateKey, CX_LAST, CX_SHA256, in, inlen, out, outlen, &info);
+    if (info & CX_ECCINFO_PARITY_ODD) {
+      out[0] |= 0x01;
+    }
+  } else {
+    cx_ecdsa_verify(privateKey, CX_LAST, CX_SHA256, in, inlen, out, outlen);
+  }
 }

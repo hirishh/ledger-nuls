@@ -1,7 +1,3 @@
-//
-// Created by andrea on 08/12/18.
-//
-
 #include "ui_utils.h"
 
 /**
@@ -23,7 +19,7 @@ unsigned int totalSteps = 0;
  * @param element
  * @return 0 or 1
  */
-int uiprocessor(const bagl_element_t *element) {
+unsigned int uiprocessor(const bagl_element_t *element) {
   if (element->component.userid == 0x0) {
     return 1;
   }

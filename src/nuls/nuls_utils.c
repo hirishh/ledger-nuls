@@ -41,7 +41,8 @@ unsigned short nuls_public_key_to_encoded_base58 (
         uint8_t *compressedPublicKey,
         uint16_t chainId, uint8_t addressVersion,
         uint8_t *out_address) {
-  unsigned char tmpBuffer[24];
+
+  unsigned char tmpBuffer[23];
   tmpBuffer[0] = chainId;
   tmpBuffer[1] = (chainId >> 8);
   tmpBuffer[2] = addressVersion;
@@ -49,23 +50,27 @@ unsigned short nuls_public_key_to_encoded_base58 (
 //  PRINTF("RAW PubKey %.*H\n", 65, &reqContext.publicKey->W);
 //  PRINTF("COMPRESSED %.*H\n", 33, compressedPublicKey);
   nuls_public_key_hash160(compressedPublicKey, 33, tmpBuffer + 3);
+  return nuls_address_to_encoded_base58(tmpBuffer, out_address);
+}
 
-//  PRINTF("tmpbuffer0,1,2 %.*H\n", 3, tmpBuffer);
-//  PRINTF("hash %.*H\n", 23, tmpBuffer);
+unsigned short nuls_address_to_encoded_base58(
+        uint8_t *nulsRipemid160, //chainId + addresstype + ripemid160
+        uint8_t *out_address) {
+  unsigned char tmpBuffer[24];
+  os_memmove(tmpBuffer, nulsRipemid160, 23);
+  //  PRINTF("tmpbuffer0,1,2 %.*H\n", 3, tmpBuffer);
+  //  PRINTF("hash %.*H\n", 23, tmpBuffer);
   tmpBuffer[23] = getxor(tmpBuffer, 23);
-//  PRINTF("XOR %d\n", tmpBuffer[23]);
-
-
+  //  PRINTF("XOR %d\n", tmpBuffer[23]);
   size_t outputLen = 32;
   if (nuls_encode_base58(tmpBuffer, 24, out_address, &outputLen) < 0) {
     THROW(EXCEPTION);
   }
-//  PRINTF("Base58 %s\n", out_address);
-
+  //  PRINTF("Base58 %s\n", out_address);
   return outputLen;
 }
 
-uint32_t setReqContextForSign(commPacket_t *packet) {
+void setReqContextForSign(commPacket_t *packet) {
 
   //reset digest
   os_memset(&reqContext.digest, 0, 32);
@@ -74,6 +79,10 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
   reqContext.bip32pathLength = packet->data[0];
   uint8_t bip32DataBuffer[256];
   os_memmove(bip32DataBuffer, packet->data + 1, reqContext.bip32pathLength * 4);
+  nuls_bip32_buffer_to_array(bip32DataBuffer, reqContext.bip32pathLength, reqContext.bip32path);
+
+  //Generate address from bip32 path
+
 
   uint32_t bytesRead = 1 + /* pathLength */
                        reqContext.bip32pathLength * 4;
@@ -90,8 +99,7 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
   uint8_t tmpBuffer[256];
   os_memmove(tmpBuffer, packet->data + bytesRead, packet->length - bytesRead);
   os_memmove(packet->data, tmpBuffer, packet->length - bytesRead);
-
-  return bytesRead;
+  packet->length = packet->length - bytesRead;
 }
 
 void setReqContextForGetPubKey(commPacket_t *packet) {
@@ -99,7 +107,9 @@ void setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.addressVersion = packet->data[1];
 
   //TODO Implement P2SH. At the moment is not supported
-  if(reqContext.addressVersion != 0x01)
+  if(reqContext.addressVersion != 0x01) {
+    THROW(NOT_SUPPORTED);
+  }
 
   reqContext.bip32pathLength = packet->data[2];
 

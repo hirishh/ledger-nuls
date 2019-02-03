@@ -1,10 +1,5 @@
-//
-// Created by andrea on 09/12/18.
-//
-
 #include "signTx.h"
 #include "../../io.h"
-#include "../nuls_utils.h"
 #include "txs/nuls_tx_parser.h"
 #include "txs/2_transfer.h"
 // #include "./txs/voteTx.h"
@@ -30,19 +25,17 @@
 #define TX_TYPE_DELETE_CONTRACT 102
 #define TX_TYPE_TRANSFER_CONTRACT 103
 
-typedef void (*tx_chunk_fn)();
+typedef void (*tx_parse_fn)();
 typedef void (*tx_end_fn)();
 
-tx_init_fn tx_init;
-tx_chunk_fn tx_chunk;
+tx_parse_fn tx_parse;
 tx_end_fn tx_end;
 ui_processor_fn ui_processor;
 step_processor_fn step_processor;
 
-static cx_sha256_t txHash;
 transaction_context_t txContext;
 
-static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
+static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
       if (currentStep < totalSteps) {
@@ -58,17 +51,32 @@ static void ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask
       touch_deny(NULL);
       break;
   }
+  return 0;
 }
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
   if ( packet->first ) {
     // Reset sha256 and tx
-    cx_sha256_init(&txHash);
+    cx_sha256_init(&txContext.txHash);
 
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
     // Set signing context from first packet and patches the .data and .length by removing header length
-    uint32_t headersLength = setReqContextForSign(packet);
+    setReqContextForSign(packet);
+
+    // Derive pubKey
+    nuls_private_derive_keypair(reqContext.bip32path, reqContext.bip32pathLength,
+                                &reqContext.privateKey, &reqContext.publicKey, reqContext.chainCode);
+    //Paranoid
+    os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
+
+    //Gen Compressed PubKey
+    nuls_compress_publicKey(&reqContext.publicKey, reqContext.compressedPublicKey);
+
+    //Compressed PubKey -> Address
+    nuls_public_key_to_encoded_base58(reqContext.compressedPublicKey, reqContext.chainId,
+                                      reqContext.addressVersion, reqContext.address);
+    reqContext.address[32] = '\0';
 
     // fetch transaction type and init txContext for signing
     txContext.type = nuls_read_u16(packet->data, 1, 0);
@@ -80,7 +88,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
     switch (txContext.type) {
       case TX_TYPE_TRANSFER_TX:
-        tx_chunk = tx_parse_specific_2_transfer;
+        tx_parse = tx_parse_specific_2_transfer;
         tx_end = tx_finalize_2_transfer;
         break;
       default:
@@ -89,7 +97,17 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
   }
 
-  os_memmove(txContext.buffer, packet->data, packet->length);
+  //insert at beginning saveBufferForNextChunk if present
+  if(txContext.saveBufferLength > 0) {
+    uint8_t tmpBuffer[600];
+    os_memmove(tmpBuffer, packet->data, packet->length);
+    os_memmove(packet->data, txContext.saveBufferForNextChunk, txContext.saveBufferLength);
+    os_memmove(packet->data + txContext.saveBufferLength, packet->data, packet->length);
+    packet->length += txContext.saveBufferLength;
+    txContext.saveBufferLength = 0;
+  }
+
+  txContext.bufferPointer = packet->data;
   txContext.bytesChunkRemaining = packet->length;
 
   BEGIN_TRY {
@@ -98,7 +116,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
             case COMMON:
               parse_group_common();
             case TX_SPECIFIC:
-              tx_chunk();
+              if(txContext.tx_parsing_group != TX_SPECIFIC) {
+                THROW(INVALID_STATE);
+              }
+              tx_parse();
             case COIN_INPUT:
               parse_group_coin_input();
             case COIN_OUTPUT:
@@ -111,9 +132,8 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         }
       CATCH_OTHER(e) {
           if(e == NEED_NEXT_CHUNK) {
-            //TODO Save last bytes and use them in the next chunk
-
-
+            os_memmove(txContext.saveBufferForNextChunk, txContext.bufferPointer, txContext.bytesChunkRemaining);
+            txContext.saveBufferLength = txContext.bytesChunkRemaining;
           } else {
             //Unexpected Error during parsing. Let the client know
             THROW(e);
@@ -123,23 +143,20 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       }
     }
   END_TRY;
-
-  //No throw, do incremental hash of the buffer
-  cx_hash(&txHash, NULL, packet->data, packet->length, NULL, NULL);
-
 }
+
 static uint8_t default_step_processor(uint8_t cur) {
   return cur + 1;
 }
 
 
 void finalizeSignTx(volatile unsigned int *flags) {
-  uint8_t finalHash[32];
 
-  // Close first sha256
-  cx_hash(&txHash, CX_LAST, finalHash, 0, NULL, NULL);
+  if(txContext.tx_parsing_group != TX_PARSED || txContext.tx_parsing_state != READY_TO_SIGN)
+    THROW(INVALID_STATE);
 
-  os_memmove(&signContext.digest, txHash.acc, 32);
+  // Close sha256 and hash again
+  cx_hash_finalize(reqContext.digest, DIGEST_LENGTH);
 
   // Init user flow.
   step_processor = default_step_processor;

@@ -4,6 +4,8 @@
 #include "../glyphs.h"
 #include "../ui_utils.h"
 
+#define SCRATCH_SIZE 21
+
 const ux_menu_entry_t menu_main[];
 const ux_menu_entry_t menu_about[];
 ux_state_t ux;
@@ -25,37 +27,75 @@ const ux_menu_entry_t menu_about[] = {
   UX_MENU_END
 };
 
-void satoshiToString(uint64_t amount, char *out) {
+unsigned char nuls_hex_amount_to_displayable(unsigned char *amount, char *dest) {
+  unsigned char LOOP1 = 15;
+  unsigned char LOOP2 = 6;
+  unsigned short scratch[SCRATCH_SIZE];
+  unsigned char offset = 0;
+  unsigned char nonZero = 0;
+  unsigned char i;
+  unsigned char targetOffset = 0;
+  unsigned char workOffset;
+  unsigned char j;
+  unsigned char nscratch = SCRATCH_SIZE;
+  unsigned char smin = nscratch - 2;
+  unsigned char comma = 0;
 
-  uint64_t partInt = amount / 100000000;
-  uint64_t partDecimal = amount - (partInt*100000000l) ;
-
-  uint8_t i = 0;
-
-  // TODO: Calc the # of digits for partInt
-  while(partInt > 0) {
-    out[i++] = (uint8_t) (partInt % 10 + '0');
-    partInt /=10;
+  for (i = 0; i < SCRATCH_SIZE; i++) {
+    scratch[i] = 0;
   }
-
-  // Swap elements
-  uint8_t j = 0;
-  uint8_t tmp;
-  for (; j<i/2; j++) {
-    tmp = out[j];
-    out[j] = out[i-1-j];
-    out[i-1-j] = tmp;
-  }
-
-  if (partDecimal > 0) {
-    out[i++] = '.';
-    uint32_t satoshi = 10000000;
-    while (satoshi > 0 && partDecimal > 0) {
-      out[i++] = (uint8_t) (partDecimal / satoshi + '0');
-      partDecimal -= (partDecimal/satoshi) * satoshi;
-      satoshi /= 10;
+  for (i = 0; i < 8; i++) {
+    for (j = 0; j < 8; j++) {
+      unsigned char k;
+      unsigned short shifted_in =
+              (((amount[i] & 0xff) & ((1 << (7 - j)))) != 0) ? (short)1
+                                                             : (short)0;
+      for (k = smin; k < nscratch; k++) {
+        scratch[k] += ((scratch[k] >= 5) ? 3 : 0);
+      }
+      if (scratch[smin] >= 8) {
+        smin -= 1;
+      }
+      for (k = smin; k < nscratch - 1; k++) {
+        scratch[k] =
+                ((scratch[k] << 1) & 0xF) | ((scratch[k + 1] >= 8) ? 1 : 0);
+      }
+      scratch[nscratch - 1] = ((scratch[nscratch - 1] << 1) & 0x0F) |
+                              (shifted_in == 1 ? 1 : 0);
     }
   }
+
+  for (i = 0; i < LOOP1; i++) {
+    if (!nonZero && (scratch[offset] == 0)) {
+      offset++;
+    } else {
+      nonZero = 1;
+      dest[targetOffset++] = scratch[offset++] + '0';
+    }
+  }
+  if (targetOffset == 0) {
+    dest[targetOffset++] = '0';
+  }
+  workOffset = offset;
+  for (i = 0; i < LOOP2; i++) {
+    unsigned char allZero = 1;
+    unsigned char j;
+    for (j = i; j < LOOP2; j++) {
+      if (scratch[workOffset + j] != 0) {
+        allZero = 0;
+        break;
+      }
+    }
+    if (allZero) {
+      break;
+    }
+    if (!comma) {
+      dest[targetOffset++] = '.';
+      comma = 1;
+    }
+    dest[targetOffset++] = scratch[offset++] + '0';
+  }
+  return targetOffset;
 }
 
 /**

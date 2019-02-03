@@ -37,7 +37,16 @@ void touch_deny() {
 
 void touch_approve() {
   uint8_t signature[64];
-  sign(&reqContext.privateKey, reqContext.digest, 32, signature);
+
+  // Derive priv-pub again
+  nuls_private_derive_keypair(reqContext.bip32path, reqContext.bip32pathLength,
+                              &reqContext.privateKey, &reqContext.publicKey, reqContext.chainCode);
+
+  nuls_signverify_finalhash(&reqContext.privateKey, 1, reqContext.digest, 32, signature, 64);
+
+  //Paranoid
+  os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
+
   initResponse();
   addToResponse(signature, 64);
 

@@ -15,12 +15,12 @@ void nuls_write_u32_le(unsigned char *buffer, unsigned long int value) {
   buffer[3] = ((value >> 24) & 0xff);
 }
 
-void nuls_write_u16_be(unsigned char *buffer, unsigned long int value) {
+void nuls_write_u16_be(unsigned char *buffer, unsigned short int value) {
   buffer[0] = ((value >> 8) & 0xff);
   buffer[1] = (value & 0xff);
 }
 
-void nuls_write_u16_le(unsigned char *buffer, unsigned long int value) {
+void nuls_write_u16_le(unsigned char *buffer, unsigned short int value) {
   buffer[0] = (value & 0xff);
   buffer[1] = ((value >> 8) & 0xff);
 }

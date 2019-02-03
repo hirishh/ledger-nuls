@@ -18,25 +18,28 @@ static const bagl_element_t ui_send_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Send from", 0x01),
   TITLE_ITEM("To", 0x02),
-  TITLE_ITEM("Message", 0x03),
+  TITLE_ITEM("Remark", 0x03),
   TITLE_ITEM("Amount", 0x04),
+  TITLE_ITEM("Fees", 0x05),
   ICON_ARROW_RIGHT(0x01),
   ICON_ARROW_RIGHT(0x02),
   ICON_ARROW_RIGHT(0x03),
-  ICON_CHECK(0x04),
+  ICON_ARROW_RIGHT(0x04),
+  ICON_CHECK(0x05),
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
 
 static uint8_t stepProcessor_send(uint8_t step) {
-  if (step == 2 && curLength == 0) {
+  if (step == 2 && txContext.remarkSize == 0) {
     return 4;
   }
   return step + 1;
 }
 
 static void uiProcessor_send(uint8_t step) {
-  uint64_t address;
+  uint8_t addressToShow[32];
+  unsigned short amountTextSize;
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
@@ -45,17 +48,22 @@ static void uiProcessor_send(uint8_t step) {
       lineBuffer[32] = '\0';
       break;
     case 2:
-      deriveAddressStringRepresentation(transaction.recipientId, lineBuffer);
+      os_memset(lineBuffer, 0, 50);
+      nuls_address_to_encoded_base58(txContext.outputAddress, addressToShow);
+      os_memmove(lineBuffer, addressToShow, 32);
+      lineBuffer[32] = '\0';
       break;
     case 3:
-      os_memmove(lineBuffer, message, MIN(50, curLength));
-      // ellipsis
-      if (curLength > 46) {
-        os_memmove(lineBuffer + 46, "...\0", 4);
-      }
+      os_memset(lineBuffer, 0, 50);
+      os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
       break;
     case 4:
-      satoshiToString(transaction.amountSatoshi, lineBuffer);
+      amountTextSize = nuls_hex_amount_to_displayable(txContext.outputAmount, lineBuffer);
+      lineBuffer[amountTextSize] = '\0';
+      break;
+    case 5:
+      amountTextSize = nuls_hex_amount_to_displayable(txContext.fees, lineBuffer);
+      lineBuffer[amountTextSize] = '\0';
   }
 }
 
@@ -82,9 +90,6 @@ void tx_parse_specific_2_transfer() {
    * - locktime
    * */
 
-  //TODO Handle saveBufferForNextChunk
-
-
   //NB: There are no break in this switch. This is intentional.
   switch(txContext.tx_parsing_state) {
 
@@ -93,30 +98,32 @@ void tx_parse_specific_2_transfer() {
       txContext.tx_parsing_state = PLACEHOLDER;
 
     case PLACEHOLDER:
-      is_available_to_parse(4)
-      uint32_t placeholder = nuls_read_u32(txContext.buffer, 1, 0);
+      is_available_to_parse(4);
+      uint32_t placeholder = nuls_read_u32(txContext.bufferPointer, 1, 0);
       if(placeholder != 0xFFFFFFFF)
         THROW(INVALID_PARAMETER);
       transaction_offset_increase(4);
 
       //It's time for CoinData
-      txContext.tx_parsing_group = COIN_INPUT
-      txContext.tx_parsing_state = COIN_INPUT_SIZE;
+      txContext.tx_parsing_group = COIN_INPUT;
+      txContext.tx_parsing_state = BEGINNING;
       break;
 
     default:
-      THROW(INVALID_STATE)
+      THROW(INVALID_STATE);
   }
 
 }
 
 void tx_finalize_2_transfer() {
 
-  if(txContext.tx_parsing_state != READY_TO_SIGN)
-    THROW(INVALID_STATE);
+  if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
+    // L_DEBUG_APP(("Fee amount not consistent\n"));
+    THROW(INVALID_PARAMETER);
+  }
 
   ux.elements = ui_send_nano;
-  ux.elements_count = 11;
+  ux.elements_count = 13;
   totalSteps = 4;
   step_processor = stepProcessor_send;
   ui_processor = uiProcessor_send;
