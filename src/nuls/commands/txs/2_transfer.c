@@ -94,12 +94,15 @@ void tx_parse_specific_2_transfer() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
+      PRINTF("-- BEGINNING\n");
       // Only PLACEHOLDER for this TX type
       txContext.tx_parsing_state = PLACEHOLDER;
 
     case PLACEHOLDER:
+      PRINTF("-- PLACEHOLDER\n");
       is_available_to_parse(4);
       uint32_t placeholder = nuls_read_u32(txContext.bufferPointer, 1, 0);
+      PRINTF("placeholder %.*H\n", 4, &placeholder);
       if(placeholder != 0xFFFFFFFF)
         THROW(INVALID_PARAMETER);
       transaction_offset_increase(4);
@@ -124,7 +127,7 @@ void tx_finalize_2_transfer() {
 
   ux.elements = ui_send_nano;
   ux.elements_count = 13;
-  totalSteps = 4;
+  totalSteps = 5;
   step_processor = stepProcessor_send;
   ui_processor = uiProcessor_send;
 }

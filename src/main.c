@@ -88,6 +88,8 @@ void handleCommPacket() {
     THROW(0x9802); // CODE_NOT_INITIALIZED
   }
 
+  PRINTF("handleCommPacket\n");
+
   if (commContext.read == 0) {
     // IF first packet we read command and strip it away from the data packet
     commContext.command = G_io_apdu_buffer[5];
@@ -105,6 +107,7 @@ void handleCommPacket() {
 
   if (commContext.read <= commContext.totalAmount) {
     // Allow real implementation to handle current comm Packet. (and possibly throw if error occurred)
+    PRINTF("BEFORE innerHandleCommPacket\n");
     innerHandleCommPacket(&commPacket, &commContext);
 
     // Compute current crc and replace it with the prevOne.
@@ -169,16 +172,19 @@ static void nuls_main(void) {
 
             switch (G_io_apdu_buffer[1]) {
               case INS_COM_START:
+                PRINTF("INS_COM_START\n");
                 handleStartCommPacket();
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
               case INS_COM_CONTINUE:
+                PRINTF("INS_COM_CONTINUE\n");
                 handleCommPacket();
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);
                 break;
               case INS_COM_END:
+                PRINTF("INS_COM_END\n");
                 processCommPacket(&flags);
                 tx = flushResponseToIO(G_io_apdu_buffer);
                 THROW(0x9000);

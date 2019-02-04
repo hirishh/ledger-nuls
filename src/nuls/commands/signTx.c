@@ -8,6 +8,7 @@
 // #include "./txs/registerDelegateTx.h"
 #include "../approval.h"
 #include "../nuls_helpers.h"
+#include "../nuls_utils.h"
 #include "../../ui_utils.h"
 
 #define TX_TYPE_CONSENSUS_REWARD 1
@@ -34,6 +35,7 @@ ui_processor_fn ui_processor;
 step_processor_fn step_processor;
 
 transaction_context_t txContext;
+reqContext_t reqContext;
 
 static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
@@ -54,9 +56,10 @@ static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int but
   return 0;
 }
 
-void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
+void handleSignTxPacket(commPacket_t *packet, commContext_t *commContext) {
   // if first packet with signing header
   if ( packet->first ) {
+    PRINTF("SIGN - First Packet\n");
     // Reset sha256 and tx
     cx_sha256_init(&txContext.txHash);
 
@@ -77,14 +80,19 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     nuls_public_key_to_encoded_base58(reqContext.compressedPublicKey, reqContext.chainId,
                                       reqContext.addressVersion, reqContext.address);
     reqContext.address[32] = '\0';
+    PRINTF("reqContext.address %s\n", reqContext.address);
 
     // fetch transaction type and init txContext for signing
-    txContext.type = nuls_read_u16(packet->data, 1, 0);
+    txContext.type = nuls_read_u16(packet->data, 0, 0);
     txContext.totalTxBytes = reqContext.signableContentLength;
+    PRINTF("reqContext.signableContentLength %d\n", reqContext.signableContentLength);
+    PRINTF("txContext.totalTxBytes %d\n", txContext.totalTxBytes);
     txContext.tx_parsing_state = BEGINNING;
     txContext.tx_parsing_group = COMMON;
     txContext.bytesRead = 0;
     txContext.saveBufferLength = 0;
+
+    PRINTF("TYPE %d\n", txContext.type);
 
     switch (txContext.type) {
       case TX_TYPE_TRANSFER_TX:
@@ -107,6 +115,8 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     txContext.saveBufferLength = 0;
   }
 
+  PRINTF("SIGN - Handler\n");
+
   txContext.bufferPointer = packet->data;
   txContext.bytesChunkRemaining = packet->length;
 
@@ -114,18 +124,25 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       TRY {
           switch(txContext.tx_parsing_group) {
             case COMMON:
+              PRINTF("GROUP: COMMON\n");
               parse_group_common();
             case TX_SPECIFIC:
+              PRINTF("GROUP: TX_SPECIFIC\n");
               if(txContext.tx_parsing_group != TX_SPECIFIC) {
                 THROW(INVALID_STATE);
               }
               tx_parse();
             case COIN_INPUT:
+              PRINTF("GROUP: COIN_INPUT\n");
               parse_group_coin_input();
             case COIN_OUTPUT:
+              PRINTF("GROUP: COIN_OUTPUT\n");
               parse_group_coin_output();
             case CHECK_SANITY_BEFORE_SIGN:
+              PRINTF("GROUP: CHECK_SANITY_BEFORE_SIGN\n");
               check_sanity_before_sign();
+              PRINTF("GROUP: CHECK_SANITY_BEFORE_SIGN-OUT\n");
+              break;
             default:
               THROW(INVALID_STATE);
           }
@@ -152,8 +169,11 @@ static uint8_t default_step_processor(uint8_t cur) {
 
 void finalizeSignTx(volatile unsigned int *flags) {
 
+  PRINTF("finalizeSignTx\n");
   if(txContext.tx_parsing_group != TX_PARSED || txContext.tx_parsing_state != READY_TO_SIGN)
     THROW(INVALID_STATE);
+
+  PRINTF("finalizeSignTx: ok\n");
 
   // Close sha256 and hash again
   cx_hash_finalize(reqContext.digest, DIGEST_LENGTH);

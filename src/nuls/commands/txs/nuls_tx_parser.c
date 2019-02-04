@@ -14,6 +14,7 @@ void parse_group_common() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
+      PRINTF("-- BEGINNING\n");
       // Reset transaction state
       txContext.remainingInputsOutputs = 0;
       txContext.currentInputOutput = 0;
@@ -27,6 +28,7 @@ void parse_group_common() {
       //no break is intentional
 
     case FIELD_TYPE:
+      PRINTF("-- FIELD_TYPE\n");
       //already parsed..
       is_available_to_parse(2);
       transaction_offset_increase(2);
@@ -34,13 +36,14 @@ void parse_group_common() {
       //no break is intentional
 
     case FIELD_TIME:
+      PRINTF("-- FIELD_TIME\n");
       is_available_to_parse(6);
       transaction_offset_increase(6);
       txContext.tx_parsing_state = FIELD_REMARK_LENGTH;
       //no break is intentional
 
     case FIELD_REMARK_LENGTH:
-      //Size
+      PRINTF("-- FIELD_REMARK_LENGTH\n");
       remarkVarInt = transaction_get_varint();
       if(remarkVarInt > REMARK_LENGTH) {
         THROW(INVALID_PARAMETER);
@@ -50,9 +53,12 @@ void parse_group_common() {
       //no break is intentional
 
     case FIELD_REMARK:
+      PRINTF("-- FIELD_REMARK\n");
       if (txContext.remarkSize != 0) {
         is_available_to_parse(txContext.remarkSize);
-        nuls_swap_bytes(txContext.remark, txContext.bufferPointer, txContext.remarkSize);
+        os_memmove(txContext.remark, txContext.bufferPointer, txContext.remarkSize);
+        txContext.remark[txContext.remarkSize] = '\0';
+        PRINTF("Remark:  %s\n", txContext.remark);
         transaction_offset_increase(txContext.remarkSize);
       }
       txContext.tx_parsing_state = BEGINNING;
@@ -70,10 +76,13 @@ void parse_group_coin_input() {
     THROW(INVALID_STATE);
   }
 
+  unsigned char amount[AMOUNT_LENGTH];
+
   do {
     switch(txContext.tx_parsing_state) {
 
       case BEGINNING:
+        PRINTF("-- BEGINNING\n");
         // Read how many inputs
         txContext.remainingInputsOutputs = transaction_get_varint(); //throw if it can't.
         txContext.currentInputOutput = 0;
@@ -87,28 +96,38 @@ void parse_group_coin_input() {
         }
 
       case COIN_OWNER_DATA_LENGTH:
+        PRINTF("-- COIN_OWNER_DATA_LENGTH\n");
+        PRINTF("remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
+        PRINTF("currentInputOutput: %d\n", txContext.currentInputOutput);
         txContext.currentInputOutputOwnerLength = transaction_get_varint();
+        PRINTF("currentInputOutputOwnerLength: %d\n", txContext.currentInputOutputOwnerLength);
         txContext.tx_parsing_state = COIN_DATA;
 
       case COIN_DATA:
+        PRINTF("-- COIN_DATA\n");
         //Check if we can parse whole input (owner + amount + locktime)
         is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
         //now we have whole input
+        PRINTF("owner: %.*H\n", txContext.currentInputOutputOwnerLength, txContext.bufferPointer);
         transaction_offset_increase(txContext.currentInputOutputOwnerLength);
         //save amount
-        unsigned char amount[AMOUNT_LENGTH];
         nuls_swap_bytes(amount, txContext.bufferPointer, AMOUNT_LENGTH);
+        PRINTF("amount: %.*H\n", 8, amount);
+
         if (transaction_amount_add_be(txContext.totalInputAmount, txContext.totalInputAmount, amount)) {
           // L_DEBUG_APP(("Input amount Overflow\n"));
           THROW(INVALID_PARAMETER);
         }
         transaction_offset_increase(AMOUNT_LENGTH);
         //locktime
+        PRINTF("locktime\n");
         transaction_offset_increase(LOCKTIME_LENGTH);
 
         //update indexes
         txContext.remainingInputsOutputs--;
         txContext.currentInputOutput++;
+        PRINTF("before if remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
+        PRINTF("before if currentInputOutput: %d\n", txContext.currentInputOutput);
         if(txContext.remainingInputsOutputs == 0) {
           txContext.tx_parsing_group = COIN_OUTPUT;
           txContext.tx_parsing_state = BEGINNING;
@@ -121,8 +140,13 @@ void parse_group_coin_input() {
       default:
         THROW(INVALID_STATE);
     }
+
+    PRINTF("WHILE remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
+    PRINTF("WHILE currentInputOutput: %d\n", txContext.currentInputOutput);
   }
-  while(txContext.remainingInputsOutputs == 0);
+  while(txContext.remainingInputsOutputs != 0);
+
+  PRINTF("-- OUT FROM COIN_INPUT\n");
 }
 
 void parse_group_coin_output() {
@@ -131,13 +155,18 @@ void parse_group_coin_output() {
     THROW(INVALID_STATE);
   }
 
+  unsigned char address[ADDRESS_LENGTH];
+  unsigned char amount[AMOUNT_LENGTH];
+
   do {
     switch(txContext.tx_parsing_state) {
 
       case BEGINNING:
+        PRINTF("-- BEGINNING\n");
         // Read how many outputs
         txContext.remainingInputsOutputs = transaction_get_varint(); //throw if it can't.
         txContext.currentInputOutput = 0;
+
         if(txContext.remainingInputsOutputs > 0) {
           txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH; //Read input data
         } else {
@@ -148,7 +177,12 @@ void parse_group_coin_output() {
         }
 
       case COIN_OWNER_DATA_LENGTH:
+        PRINTF("-- COIN_OWNER_DATA_LENGTH\n");
+        PRINTF("-- remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
+        PRINTF("-- currentInputOutput: %d\n", txContext.currentInputOutput);
         txContext.currentInputOutputOwnerLength = transaction_get_varint();
+        PRINTF("-- currentInputOutputOwnerLength: %d\n", txContext.currentInputOutputOwnerLength);
+        PRINTF("-- ADDRESS_LENGTH: %d\n", ADDRESS_LENGTH);
         if(txContext.currentInputOutputOwnerLength != ADDRESS_LENGTH) {
           //TODO At the moment we support only transfer to address. rawScript is not implemented
           THROW(NOT_SUPPORTED);
@@ -156,17 +190,19 @@ void parse_group_coin_output() {
         txContext.tx_parsing_state = COIN_DATA;
 
       case COIN_DATA:
+        PRINTF("-- COIN_DATA\n");
         //Check if we can parse whole input (owner + amount + locktime)
         is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
         //now we have whole output
+        PRINTF("owner: %.*H\n", txContext.currentInputOutputOwnerLength, txContext.bufferPointer);
         //TODO we need to change it in a second moment
         //if currentInputOutput == 0 -> addressTo (temp solution)
         //if currentInputOutput == 1 -> change address (temp solution)
-        unsigned char address[ADDRESS_LENGTH];
-        unsigned char amount[AMOUNT_LENGTH];
-        nuls_swap_bytes(address, txContext.bufferPointer, ADDRESS_LENGTH);
-        transaction_offset_increase(txContext.currentInputOutputOwnerLength);
+        os_memmove(address, txContext.bufferPointer, ADDRESS_LENGTH);
+        PRINTF("Address:  %s\n", address);
+        transaction_offset_increase(ADDRESS_LENGTH);
         nuls_swap_bytes(amount, txContext.bufferPointer, AMOUNT_LENGTH);
+        PRINTF("amount: %.*H\n", 8, amount);
         transaction_offset_increase(AMOUNT_LENGTH);
 
         //If address is a P2SH, throw an error since it's not yet supported
@@ -192,11 +228,14 @@ void parse_group_coin_output() {
         }
 
         //locktime
+        PRINTF("locktime\n");
         transaction_offset_increase(LOCKTIME_LENGTH);
 
         //update indexes
         txContext.remainingInputsOutputs--;
         txContext.currentInputOutput++;
+        PRINTF("before if remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
+        PRINTF("before if currentInputOutput: %d\n", txContext.currentInputOutput);
         if(txContext.remainingInputsOutputs == 0) {
           txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
           txContext.tx_parsing_state = BEGINNING;
@@ -209,20 +248,32 @@ void parse_group_coin_output() {
       default:
         THROW(INVALID_STATE);
     }
+
+    PRINTF("WHILE remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
+    PRINTF("WHILE currentInputOutput: %d\n", txContext.currentInputOutput);
   }
-  while(txContext.remainingInputsOutputs == 0);
+  while(txContext.remainingInputsOutputs != 0);
+
+  PRINTF("-- OUT FROM COIN_OUTPUT\n");
 }
 
 void check_sanity_before_sign() {
-
+  PRINTF("check_sanity_before_sign\n");
   if(txContext.tx_parsing_group != CHECK_SANITY_BEFORE_SIGN) {
     THROW(INVALID_STATE);
   }
+
+  PRINTF("txContext.bytesChunkRemaining: %d\n", txContext.bytesChunkRemaining);
+  PRINTF("txContext.bytesRead: %d\n", txContext.bytesRead);
+  PRINTF("txContext.totalTxBytes: %d\n", txContext.totalTxBytes);
 
   //Sanity checks about final parsing state
   if(txContext.bytesChunkRemaining != 0 || txContext.bytesRead != txContext.totalTxBytes) {
     THROW(INVALID_STATE);
   }
+
+  PRINTF("NO throw here\n");
+
   txContext.tx_parsing_group = TX_PARSED;
   txContext.tx_parsing_state = READY_TO_SIGN;
 }
@@ -250,8 +301,12 @@ void cx_hash_increase(unsigned char value) {
 
 void transaction_offset_increase(unsigned char value) {
   cx_hash_increase(value);
+  PRINTF("buffer processed: %.*H\n", value, txContext.bufferPointer);
+  txContext.bytesRead += value;
+  PRINTF("buffer bytesRead: %d\n", txContext.bytesRead);
   txContext.bufferPointer += value;
   txContext.bytesChunkRemaining -= value;
+  PRINTF("buffer bytesChunkRemaining: %d\n", txContext.bytesChunkRemaining);
 }
 
 void is_available_to_parse(unsigned char x) {

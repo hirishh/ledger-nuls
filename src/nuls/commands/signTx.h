@@ -79,20 +79,20 @@ typedef struct transaction_context {
     unsigned char totalOutputAmount[8];
 
     /** Bytes parsed */
-    uint64_t bytesRead;
+    uint16_t bytesRead;
 
     /** Bytes to be parsed (in the chunk) */
-    uint64_t bytesChunkRemaining;
+    unsigned char bytesChunkRemaining;
 
     /** Current pointer to the transaction buffer for the transaction parser */
     unsigned char *bufferPointer;
 
     /** Bytes to be parsed (in the next chunk) */
     unsigned char saveBufferForNextChunk[250];
-    uint64_t saveBufferLength;
+    uint16_t saveBufferLength;
 
     /** Total Tx Bytes */
-    uint64_t totalTxBytes;
+    uint16_t totalTxBytes;
 
     /** Fields to Display  */
     unsigned char remark[REMARK_LENGTH];

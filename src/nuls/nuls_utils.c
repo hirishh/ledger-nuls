@@ -9,8 +9,6 @@
 #include "nuls_base58.h"
 #include "../io.h"
 
-reqContext_t reqContext;
-
 void nuls_compress_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded) {
   os_memmove(out_encoded, publicKey->W, 33);
   out_encoded[0] = ((publicKey->W[64] & 1) ? 0x03 : 0x02);
@@ -74,6 +72,7 @@ void setReqContextForSign(commPacket_t *packet) {
 
   //reset digest
   os_memset(&reqContext.digest, 0, 32);
+  reqContext.signableContentLength = 0;
 
   //Read bip32path
   reqContext.bip32pathLength = packet->data[0];
@@ -84,22 +83,28 @@ void setReqContextForSign(commPacket_t *packet) {
   //Generate address from bip32 path
 
 
-  uint32_t bytesRead = 1 + /* pathLength */
+  uint32_t headerBytesRead = 1 + /* pathLength */
                        reqContext.bip32pathLength * 4;
 
   // Check signable content length if is correct
   //Data Length
-  reqContext.signableContentLength = nuls_read_u16(packet->data + bytesRead, 1, 0);
+  reqContext.signableContentLength = nuls_read_u16(packet->data + headerBytesRead, 1, 0);
+  PRINTF("reqContext.signableContentLength %d\n", reqContext.signableContentLength);
   if (reqContext.signableContentLength >= commContext.totalAmount) {
     THROW(0x6700); // INCORRECT_LENGTH
   }
-  bytesRead += 2;
+  headerBytesRead += 2;
 
   // clean up packet->data by removing the consumed content (sign context)
   uint8_t tmpBuffer[256];
-  os_memmove(tmpBuffer, packet->data + bytesRead, packet->length - bytesRead);
-  os_memmove(packet->data, tmpBuffer, packet->length - bytesRead);
-  packet->length = packet->length - bytesRead;
+  os_memmove(tmpBuffer, packet->data + headerBytesRead, packet->length - headerBytesRead);
+  os_memmove(packet->data, tmpBuffer, packet->length - headerBytesRead);
+  packet->length = packet->length - headerBytesRead;
+  PRINTF("packet->length %d\n", packet->length);
+  PRINTF("packet-data %.*H\n", packet->length, &packet->data);
+  PRINTF("First byte packet %d\n", packet->data[0]);
+  PRINTF("Second byte packet %d\n", packet->data[1]);
+
 }
 
 void setReqContextForGetPubKey(commPacket_t *packet) {

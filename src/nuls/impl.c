@@ -17,6 +17,7 @@ void innerHandleCommPacket(commPacket_t *packet, commContext_t *context) {
     case INS_SIGN_MSG:
       break;
     case INS_SIGN:
+      handleSignTxPacket(packet, context);
       break;
     case INS_PING:
     case INS_VERSION:
@@ -35,6 +36,7 @@ bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t *lastPack
     case INS_SIGN_MSG:
       break;
     case INS_SIGN:
+      finalizeSignTx(flags);
       break;
     default:
       THROW(0x6a82); // INCORRECT_DATA
