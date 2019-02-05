@@ -120,10 +120,14 @@ void tx_parse_specific_2_transfer() {
 
 void tx_finalize_2_transfer() {
 
+  PRINTF("tx_finalize_2_transfer()\n");
+
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
     // L_DEBUG_APP(("Fee amount not consistent\n"));
     THROW(INVALID_PARAMETER);
   }
+
+  PRINTF("txContext.fees %.*H\n", 8, txContext.fees);
 
   ux.elements = ui_send_nano;
   ux.elements_count = 13;

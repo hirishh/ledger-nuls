@@ -17,6 +17,7 @@ void innerHandleCommPacket(commPacket_t *packet, commContext_t *context) {
     case INS_SIGN_MSG:
       break;
     case INS_SIGN:
+      PRINTF("handleSignTxPacket - pre innerHandleCommPacket\n");
       handleSignTxPacket(packet, context);
       break;
     case INS_PING:
@@ -36,6 +37,7 @@ bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t *lastPack
     case INS_SIGN_MSG:
       break;
     case INS_SIGN:
+      PRINTF("innerProcessCommPacket - pre finalizeSignTx\n");
       finalizeSignTx(flags);
       break;
     default:

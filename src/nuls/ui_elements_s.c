@@ -28,8 +28,8 @@ const ux_menu_entry_t menu_about[] = {
 };
 
 unsigned char nuls_hex_amount_to_displayable(unsigned char *amount, char *dest) {
-  unsigned char LOOP1 = 15;
-  unsigned char LOOP2 = 6;
+  unsigned char LOOP1 = 13;
+  unsigned char LOOP2 = 8;
   unsigned short scratch[SCRATCH_SIZE];
   unsigned char offset = 0;
   unsigned char nonZero = 0;

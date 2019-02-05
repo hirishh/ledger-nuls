@@ -128,6 +128,7 @@ With the signing commands you can sign both transactions and messages.
 |  Description                       | Length (bytes) |             Info                    |
 |------------------------------------|----------------|-------------------------------------|
 | Command                            |       1        |  05 (sign p2pkh tx) 06 (sign msg)   |
+| Address type                       |       1        | 1 = default, 2 = contract, 3 = P2SH |
 | # Of Bip32 paths                   |       1        |                                     |
 | First Derivation path              |       1        |                                     |
 |               ...                  |       1        |                                     |

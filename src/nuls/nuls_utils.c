@@ -68,28 +68,67 @@ unsigned short nuls_address_to_encoded_base58(
   return outputLen;
 }
 
+uint32_t extractBip32Data(uint8_t *data) {
+  os_memset(&reqContext.bip32path, 0, sizeof(reqContext.bip32path));
+  reqContext.bip32pathLength = 0;
+
+  //AddressType
+  reqContext.addressVersion = data[0];
+  PRINTF("addressVersion %d\n", reqContext.addressVersion);
+  //TODO Implement P2SH. At the moment is not supported
+  if(reqContext.addressVersion != 0x01) {
+    THROW(NOT_SUPPORTED);
+  }
+
+  //Read bip32path
+  reqContext.bip32pathLength = data[1];
+  PRINTF("bip32pathLength %d\n", reqContext.bip32pathLength);
+  uint8_t bip32DataBuffer[256];
+  os_memmove(bip32DataBuffer, data + 2, reqContext.bip32pathLength * 4);
+  PRINTF("bip32DataBuffer %.*H\n", reqContext.bip32pathLength * 4, bip32DataBuffer);
+  nuls_bip32_buffer_to_array(bip32DataBuffer, reqContext.bip32pathLength, reqContext.bip32path);
+
+  for(unsigned int i=0; i < MAX_BIP32_PATH; i++) {
+    PRINTF("bip32path[%u] -> %u\n", i, reqContext.bip32path[i]);
+  }
+
+  //Set chainId from bip32path[1]
+  reqContext.chainId = (uint16_t) reqContext.bip32path[1];
+
+  //Derive Address
+  PRINTF("before - nuls_private_derive_keypair\n");
+  // Derive pubKey
+  nuls_private_derive_keypair(reqContext.bip32path, reqContext.bip32pathLength,
+                              &reqContext.privateKey, &reqContext.publicKey, reqContext.chainCode);
+  //Paranoid
+  os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
+
+  PRINTF("before - nuls_compress_publicKey\n");
+  //Gen Compressed PubKey
+  nuls_compress_publicKey(&reqContext.publicKey, reqContext.compressedPublicKey);
+
+  PRINTF("before - nuls_public_key_to_encoded_base58\n");
+  //Compressed PubKey -> Address
+  nuls_public_key_to_encoded_base58(reqContext.compressedPublicKey, reqContext.chainId,
+                                    reqContext.addressVersion, reqContext.address);
+  reqContext.address[32] = '\0';
+  PRINTF("reqContext.address %s\n", reqContext.address);
+
+  return /* AddressType */ 1 + /* pathLength */ 1 + reqContext.bip32pathLength * 4;
+}
+
 void setReqContextForSign(commPacket_t *packet) {
 
   //reset digest
   os_memset(&reqContext.digest, 0, 32);
   reqContext.signableContentLength = 0;
 
-  //Read bip32path
-  reqContext.bip32pathLength = packet->data[0];
-  uint8_t bip32DataBuffer[256];
-  os_memmove(bip32DataBuffer, packet->data + 1, reqContext.bip32pathLength * 4);
-  nuls_bip32_buffer_to_array(bip32DataBuffer, reqContext.bip32pathLength, reqContext.bip32path);
+  uint32_t headerBytesRead = extractBip32Data(packet->data);
 
-  //Generate address from bip32 path
-
-
-  uint32_t headerBytesRead = 1 + /* pathLength */
-                       reqContext.bip32pathLength * 4;
-
-  // Check signable content length if is correct
   //Data Length
   reqContext.signableContentLength = nuls_read_u16(packet->data + headerBytesRead, 1, 0);
   PRINTF("reqContext.signableContentLength %d\n", reqContext.signableContentLength);
+  // Check signable content length if is correct
   if (reqContext.signableContentLength >= commContext.totalAmount) {
     THROW(0x6700); // INCORRECT_LENGTH
   }
@@ -104,24 +143,9 @@ void setReqContextForSign(commPacket_t *packet) {
   PRINTF("packet-data %.*H\n", packet->length, &packet->data);
   PRINTF("First byte packet %d\n", packet->data[0]);
   PRINTF("Second byte packet %d\n", packet->data[1]);
-
 }
 
 void setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.showConfirmation = packet->data[0];
-  reqContext.addressVersion = packet->data[1];
-
-  //TODO Implement P2SH. At the moment is not supported
-  if(reqContext.addressVersion != 0x01) {
-    THROW(NOT_SUPPORTED);
-  }
-
-  reqContext.bip32pathLength = packet->data[2];
-
-  uint8_t bip32DataBuffer[256];
-  os_memmove(bip32DataBuffer, packet->data + 3, packet->length - 3);
-  nuls_bip32_buffer_to_array(bip32DataBuffer, reqContext.bip32pathLength, reqContext.bip32path);
-
-  //Set chainId from bip32path[1]
-  reqContext.chainId = (uint16_t) reqContext.bip32path[1];
+  extractBip32Data(packet->data + 1);
 }

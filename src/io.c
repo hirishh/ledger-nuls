@@ -34,6 +34,7 @@ void initResponse() {
  * @return the num of bytes written
  */
 unsigned int flushResponseToIO(void *out) {
+  PRINTF("flushResponseToIO\n");
   // Write how many infos toWrite
   os_memmove(out, &(response.n), 1);
   unsigned int total = 1;

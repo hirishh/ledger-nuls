@@ -283,16 +283,15 @@ void check_sanity_before_sign() {
 void cx_hash_finalize(unsigned char *dest, unsigned char size) {
   unsigned char fake[1];
   unsigned char tmpHash[DIGEST_LENGTH];
+  PRINTF("cx_hash_finalize\n");
   cx_sha256_t localHash;
 
-  //L_DEBUG_BUF(("Finalize hash with\n", dataBuffer, sizeof(dataBuffer)));
   cx_hash(&txContext.txHash.header, CX_LAST, fake, 0, tmpHash, DIGEST_LENGTH);
-  //L_DEBUG_BUF(("Hash1\n", hash1, sizeof(hash1)));
-
+  PRINTF("CX First Hash  %.*H\n", DIGEST_LENGTH, tmpHash);
   // Rehash
   cx_sha256_init(&localHash);
   cx_hash(&localHash.header, CX_LAST, tmpHash, DIGEST_LENGTH, dest, size);
-  //L_DEBUG_BUF(("Hash2\n", hash2, sizeof(hash2)));
+  PRINTF("CX Second Hash  %.*H\n", size, dest);
 }
 
 void cx_hash_increase(unsigned char value) {

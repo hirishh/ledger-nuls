@@ -36,6 +36,7 @@ void touch_deny() {
 }
 
 void touch_approve() {
+  PRINTF("touch approve: inside\n");
   uint8_t signature[64];
 
   // Derive priv-pub again

@@ -67,21 +67,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *commContext) {
     // Set signing context from first packet and patches the .data and .length by removing header length
     setReqContextForSign(packet);
 
-    // Derive pubKey
-    nuls_private_derive_keypair(reqContext.bip32path, reqContext.bip32pathLength,
-                                &reqContext.privateKey, &reqContext.publicKey, reqContext.chainCode);
-    //Paranoid
-    os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
-
-    //Gen Compressed PubKey
-    nuls_compress_publicKey(&reqContext.publicKey, reqContext.compressedPublicKey);
-
-    //Compressed PubKey -> Address
-    nuls_public_key_to_encoded_base58(reqContext.compressedPublicKey, reqContext.chainId,
-                                      reqContext.addressVersion, reqContext.address);
-    reqContext.address[32] = '\0';
-    PRINTF("reqContext.address %s\n", reqContext.address);
-
     // fetch transaction type and init txContext for signing
     txContext.type = nuls_read_u16(packet->data, 0, 0);
     txContext.totalTxBytes = reqContext.signableContentLength;
@@ -160,6 +145,8 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *commContext) {
       }
     }
   END_TRY;
+
+  PRINTF("SIGN - END_TRY\n");
 }
 
 static uint8_t default_step_processor(uint8_t cur) {
@@ -177,11 +164,15 @@ void finalizeSignTx(volatile unsigned int *flags) {
 
   // Close sha256 and hash again
   cx_hash_finalize(reqContext.digest, DIGEST_LENGTH);
+  PRINTF("DIGEST  %.*H\n", DIGEST_LENGTH, reqContext.digest);
+
+  PRINTF("Pre step-processor\n");
 
   // Init user flow.
   step_processor = default_step_processor;
   ui_processor = NULL;
 
+  PRINTF("Pre tx_end()\n");
   tx_end();
 
   currentStep = 1;
