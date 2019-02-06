@@ -160,19 +160,13 @@ void finalizeSignTx(volatile unsigned int *flags) {
   if(txContext.tx_parsing_group != TX_PARSED || txContext.tx_parsing_state != READY_TO_SIGN)
     THROW(INVALID_STATE);
 
-  PRINTF("finalizeSignTx: ok\n");
-
   // Close sha256 and hash again
   cx_hash_finalize(reqContext.digest, DIGEST_LENGTH);
-  PRINTF("DIGEST  %.*H\n", DIGEST_LENGTH, reqContext.digest);
-
-  PRINTF("Pre step-processor\n");
 
   // Init user flow.
   step_processor = default_step_processor;
   ui_processor = NULL;
 
-  PRINTF("Pre tx_end()\n");
   tx_end();
 
   currentStep = 1;

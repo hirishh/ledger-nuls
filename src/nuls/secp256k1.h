@@ -26,12 +26,14 @@ void nuls_bip32_buffer_to_array(
 /**
  * Signs or verify an arbitrary message given the privateKey and the info
  * @param privateKey: the privateKey to be used
+ * @param sign: 1 = sign, 0 = verify
  * @param in: the message to sign
  * @param inlen: the length of the message ot sign
  * @param out: destination buffer
  * @param outlen: destination buffer length
+ * @return signLength if signMode, 0 or 1 if verify mode
  */
-void nuls_signverify_finalhash(
-        cx_ecfp_private_key_t *privateKey, unsigned char sign,
-        unsigned char *in, unsigned short inlen,
-        unsigned char *out, unsigned short outlen);
+unsigned short nuls_signverify_finalhash(
+        cx_ecfp_private_key_t WIDE *privateKey, unsigned char sign,
+        unsigned char WIDE *in, unsigned int inlen,
+        unsigned char *out, unsigned int outlen);

@@ -3,6 +3,8 @@
 #include "../ui_utils.h"
 #include "../io.h"
 #include "./nuls_utils.h"
+#include "./nuls_helpers.h"
+#include "./secp256k1.h"
 #include "./ui_elements_s.h"
 #include "os_io_seproxyhal.h"
 
@@ -36,20 +38,29 @@ void touch_deny() {
 }
 
 void touch_approve() {
-  PRINTF("touch approve: inside\n");
-  uint8_t signature[64];
+
+  PRINTF("touch_approve\n");
+
+  uint8_t signature[255];
+  os_memset(signature, 0, 255);
 
   // Derive priv-pub again
   nuls_private_derive_keypair(reqContext.bip32path, reqContext.bip32pathLength,
                               &reqContext.privateKey, &reqContext.publicKey, reqContext.chainCode);
 
-  nuls_signverify_finalhash(&reqContext.privateKey, 1, reqContext.digest, 32, signature, 64);
+  PRINTF("after nuls_private_derive_keypair\n");
+
+  unsigned short signatureSize = nuls_signverify_finalhash(&(reqContext.privateKey), 1, reqContext.digest, sizeof(reqContext.digest), signature, sizeof(signature));
+
+  PRINTF("after nuls_signverify_finalhash\n");
 
   //Paranoid
   os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
 
+  PRINTF("signature %.*H\n", signatureSize, signature);
+
   initResponse();
-  addToResponse(signature, 64);
+  addToResponse(signature, signatureSize);
 
   // Allow restart of operation
   commContext.started = false;

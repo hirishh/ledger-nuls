@@ -4,7 +4,7 @@
 #include "secp256k1.h"
 #include "nuls_helpers.h"
 
-#define LIBN_CURVE CX_CURVE_SECP256K1
+#define LIBN_CURVE CX_CURVE_256K1
 
 void nuls_private_derive_keypair(uint32_t *bip32Path, uint8_t bip32PathLength, cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *publicKey, uint8_t *out_chainCode) {
   uint8_t privateKeyData[32];
@@ -21,7 +21,6 @@ void nuls_private_derive_keypair(uint32_t *bip32Path, uint8_t bip32PathLength, c
 
   // Clean up!
   os_memset(privateKeyData, 0, sizeof(privateKeyData));
-  os_memset(privateKey, 0, sizeof(privateKey));
 }
 
 void nuls_bip32_buffer_to_array(uint8_t *bip32DataBuffer, uint8_t bip32PathLength, uint32_t *out_bip32Path) {
@@ -36,16 +35,19 @@ void nuls_bip32_buffer_to_array(uint8_t *bip32DataBuffer, uint8_t bip32PathLengt
   }
 }
 
-void nuls_signverify_finalhash(cx_ecfp_private_key_t *privateKey, unsigned char sign,
-        unsigned char *in, unsigned short inlen,
-        unsigned char *out, unsigned short outlen) {
+unsigned short nuls_signverify_finalhash(
+        cx_ecfp_private_key_t WIDE *privateKey, unsigned char sign,
+        unsigned char WIDE *in, unsigned int inlen,
+        unsigned char *out, unsigned int outlen) {
+  int result = 0;
   if(sign) {
     unsigned int info = 0;
-    cx_ecdsa_sign(privateKey, CX_LAST, CX_SHA256, in, inlen, out, outlen, &info);
+    result = cx_ecdsa_sign(privateKey, CX_LAST | CX_RND_RFC6979, CX_SHA256, in, inlen, out, outlen, &info);
     if (info & CX_ECCINFO_PARITY_ODD) {
       out[0] |= 0x01;
     }
   } else {
-    cx_ecdsa_verify(privateKey, CX_LAST, CX_SHA256, in, inlen, out, outlen);
+    result = cx_ecdsa_verify(privateKey, CX_LAST, CX_SHA256, in, inlen, out, outlen);
   }
+  return result;
 }

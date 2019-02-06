@@ -94,20 +94,15 @@ uint32_t extractBip32Data(uint8_t *data) {
 
   //Set chainId from bip32path[1]
   reqContext.chainId = (uint16_t) reqContext.bip32path[1];
+  PRINTF("reqContext.chainId %d\n", reqContext.chainId);
 
-  //Derive Address
-  PRINTF("before - nuls_private_derive_keypair\n");
   // Derive pubKey
   nuls_private_derive_keypair(reqContext.bip32path, reqContext.bip32pathLength,
                               &reqContext.privateKey, &reqContext.publicKey, reqContext.chainCode);
   //Paranoid
   os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
-
-  PRINTF("before - nuls_compress_publicKey\n");
   //Gen Compressed PubKey
   nuls_compress_publicKey(&reqContext.publicKey, reqContext.compressedPublicKey);
-
-  PRINTF("before - nuls_public_key_to_encoded_base58\n");
   //Compressed PubKey -> Address
   nuls_public_key_to_encoded_base58(reqContext.compressedPublicKey, reqContext.chainId,
                                     reqContext.addressVersion, reqContext.address);

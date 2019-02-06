@@ -43,18 +43,15 @@ static void uiProcessor_send(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
-      os_memset(lineBuffer, 0, 50);
       os_memmove(lineBuffer, &reqContext.address, 32);
       lineBuffer[32] = '\0';
       break;
     case 2:
-      os_memset(lineBuffer, 0, 50);
       nuls_address_to_encoded_base58(txContext.outputAddress, addressToShow);
       os_memmove(lineBuffer, addressToShow, 32);
       lineBuffer[32] = '\0';
       break;
     case 3:
-      os_memset(lineBuffer, 0, 50);
       os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
       break;
     case 4:
@@ -64,6 +61,9 @@ static void uiProcessor_send(uint8_t step) {
     case 5:
       amountTextSize = nuls_hex_amount_to_displayable(txContext.fees, lineBuffer);
       lineBuffer[amountTextSize] = '\0';
+      break;
+    default:
+      THROW(INVALID_STATE);
   }
 }
 
@@ -120,14 +120,10 @@ void tx_parse_specific_2_transfer() {
 
 void tx_finalize_2_transfer() {
 
-  PRINTF("tx_finalize_2_transfer()\n");
-
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
     // L_DEBUG_APP(("Fee amount not consistent\n"));
     THROW(INVALID_PARAMETER);
   }
-
-  PRINTF("txContext.fees %.*H\n", 8, txContext.fees);
 
   ux.elements = ui_send_nano;
   ux.elements_count = 13;
