@@ -3,13 +3,9 @@
 //
 
 #include "getPubKey.h"
-
-#include "../secp256k1.h"
-#include "../nuls_utils.h"
-#include "../ui_elements_s.h"
+#include "../nuls_internals.h"
 #include "../../ui_utils.h"
 #include "../../io.h"
-#include "../approval.h"
 #include "os.h"
 
 
@@ -29,13 +25,13 @@ static void createPublicKeyResponse() {
   initResponse();
 
   //ChainCode
-  addToResponse(reqContext.chainCode, 32);
+  addToResponse(reqContext.accountFrom.chainCode, 32);
 
   //PubKey
-  addToResponse(reqContext.compressedPublicKey, 33);
+  addToResponse(reqContext.accountFrom.compressedPublicKey, 33);
 
   //Base58Address
-  addToResponse(reqContext.address, 32);
+  addToResponse(reqContext.accountFrom.address, 32);
 }
 
 unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -61,7 +57,7 @@ unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int but
 
 static void ui_address(void) {
   os_memset(lineBuffer, 0, 50);
-  os_memmove(lineBuffer, &reqContext.address, 32);
+  os_memmove(lineBuffer, &reqContext.accountFrom.address, 32);
   lineBuffer[32] = '\0';
   UX_DISPLAY(verify_address_ui, NULL);
 }

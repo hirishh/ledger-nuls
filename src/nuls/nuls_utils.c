@@ -4,9 +4,7 @@
 #include <stdio.h>
 #include "os.h"
 #include "cx.h"
-#include "nuls_utils.h"
-#include "nuls_helpers.h"
-#include "nuls_base58.h"
+#include "nuls_internals.h"
 #include "../io.h"
 
 void nuls_compress_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded) {
@@ -37,13 +35,13 @@ uint8_t getxor(uint8_t *buffer, uint8_t length) {
 
 unsigned short nuls_public_key_to_encoded_base58 (
         uint8_t *compressedPublicKey,
-        uint16_t chainId, uint8_t addressVersion,
+        uint16_t chainId, uint8_t addressType,
         uint8_t *out_address) {
 
   unsigned char tmpBuffer[23];
   tmpBuffer[0] = chainId;
   tmpBuffer[1] = (chainId >> 8);
-  tmpBuffer[2] = addressVersion;
+  tmpBuffer[2] = addressType;
 
 //  PRINTF("RAW PubKey %.*H\n", 65, &reqContext.publicKey->W);
 //  PRINTF("COMPRESSED %.*H\n", 33, compressedPublicKey);
@@ -68,57 +66,92 @@ unsigned short nuls_address_to_encoded_base58(
   return outputLen;
 }
 
-uint32_t extractBip32Data(uint8_t *data) {
-  os_memset(&reqContext.bip32path, 0, sizeof(reqContext.bip32path));
-  reqContext.bip32pathLength = 0;
+void resetAccountInfo(local_address_t *account) {
+  os_memset(&(account->privateKey), 0, sizeof(account->privateKey));
+  os_memset(&(account->publicKey), 0, sizeof(account->publicKey));
+  os_memset(account->compressedPublicKey, 0, sizeof(account->compressedPublicKey));
+  os_memset(account->chainCode, 0, sizeof(account->chainCode));
+  account->chainId = 0;
+  account->pathLength = 0;
+  account->type = 0;
+  os_memset(account->path, 0, sizeof(account->path));
+  os_memset(account->address, 0, sizeof(account->address));
+}
+
+uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
+
+  //Reset
+  resetAccountInfo(account);
+
+  uint32_t readCounter = 0;
+
+  //PathLength
+  account->pathLength = data[0];
+  readCounter++;
+  PRINTF("account->pathLength %d\n", account->pathLength);
+
+  if(account->pathLength == 0) {
+    return readCounter;
+  }
+
+  if(account->pathLength > MAX_BIP32_PATH) {
+    THROW(INVALID_PARAMETER);
+  }
 
   //AddressType
-  reqContext.addressVersion = data[0];
-  PRINTF("addressVersion %d\n", reqContext.addressVersion);
+  account->type = data[1];
+  readCounter++;
+  PRINTF("account->type %d\n", account->type);
   //TODO Implement P2SH. At the moment is not supported
-  if(reqContext.addressVersion != 0x01) {
+  if(account->type != 0x01) {
     THROW(NOT_SUPPORTED);
   }
 
-  //Read bip32path
-  reqContext.bip32pathLength = data[1];
-  PRINTF("bip32pathLength %d\n", reqContext.bip32pathLength);
-  uint8_t bip32DataBuffer[256];
-  os_memmove(bip32DataBuffer, data + 2, reqContext.bip32pathLength * 4);
-  PRINTF("bip32DataBuffer %.*H\n", reqContext.bip32pathLength * 4, bip32DataBuffer);
-  nuls_bip32_buffer_to_array(bip32DataBuffer, reqContext.bip32pathLength, reqContext.bip32path);
+  //Path
+  uint8_t bip32buffer[45];
+  os_memmove(bip32buffer, data + 2, account->pathLength * 4);
+  readCounter += account->pathLength * 4;
+  PRINTF("bip32buffer %.*H\n", account->pathLength * 4, bip32buffer);
+  nuls_bip32_buffer_to_array(bip32buffer, account->pathLength, account->path);
 
   for(unsigned int i=0; i < MAX_BIP32_PATH; i++) {
-    PRINTF("bip32path[%u] -> %u\n", i, reqContext.bip32path[i]);
+    PRINTF("account->path[%u] -> %u\n", i, account->path[i]);
   }
 
-  //Set chainId from bip32path[1]
-  reqContext.chainId = (uint16_t) reqContext.bip32path[1];
-  PRINTF("reqContext.chainId %d\n", reqContext.chainId);
+  //Set chainId from account->path[1]
+  account->chainId = (uint16_t) account->path[1];
+  PRINTF("account->chainId %d\n", account->chainId);
 
   // Derive pubKey
-  nuls_private_derive_keypair(reqContext.bip32path, reqContext.bip32pathLength,
-                              &reqContext.privateKey, &reqContext.publicKey, reqContext.chainCode);
+  nuls_private_derive_keypair(account->path, account->pathLength,
+                              &account->privateKey, &account->publicKey, account->chainCode);
   //Paranoid
-  os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
+  os_memset(&account->privateKey, 0, sizeof(account->privateKey));
   //Gen Compressed PubKey
-  nuls_compress_publicKey(&reqContext.publicKey, reqContext.compressedPublicKey);
+  nuls_compress_publicKey(&account->publicKey, account->compressedPublicKey);
   //Compressed PubKey -> Address
-  nuls_public_key_to_encoded_base58(reqContext.compressedPublicKey, reqContext.chainId,
-                                    reqContext.addressVersion, reqContext.address);
-  reqContext.address[32] = '\0';
-  PRINTF("reqContext.address %s\n", reqContext.address);
+  nuls_public_key_to_encoded_base58(account->compressedPublicKey, account->chainId,
+                                    account->type, account->address);
+  account->address[32] = '\0';
+  PRINTF("account->address %s\n", account->address);
 
-  return /* AddressType */ 1 + /* pathLength */ 1 + reqContext.bip32pathLength * 4;
+
+  return readCounter;
 }
 
 void setReqContextForSign(commPacket_t *packet) {
-
-  //reset digest
-  os_memset(&reqContext.digest, 0, 32);
   reqContext.signableContentLength = 0;
 
-  uint32_t headerBytesRead = extractBip32Data(packet->data);
+  uint32_t headerBytesRead = 0;
+  //AccountFrom
+  headerBytesRead += extractAccountInfo(packet->data, &reqContext.accountFrom);
+  //AccountChange
+  headerBytesRead += extractAccountInfo(packet->data + headerBytesRead, &reqContext.accountChange);
+
+  //Check chainId is the same if (any) change address
+  if(reqContext.accountChange.pathLength > 0 && (reqContext.accountChange.chainId != reqContext.accountFrom.chainId)) {
+    THROW(INVALID_PARAMETER);
+  }
 
   //Data Length
   reqContext.signableContentLength = nuls_read_u16(packet->data + headerBytesRead, 1, 0);
@@ -142,5 +175,5 @@ void setReqContextForSign(commPacket_t *packet) {
 
 void setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.showConfirmation = packet->data[0];
-  extractBip32Data(packet->data + 1);
+  extractAccountInfo(packet->data + 1, &reqContext.accountFrom);
 }

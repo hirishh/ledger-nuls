@@ -1,8 +1,9 @@
+#ifndef SECP256K1_H
+#define SECP256K1_H
+
 #include <inttypes.h>
 #include <stdbool.h>
 #include "os.h"
-
-#define MAX_BIP32_PATH 10
 
 /**
  *
@@ -37,3 +38,5 @@ unsigned short nuls_signverify_finalhash(
         cx_ecfp_private_key_t WIDE *privateKey, unsigned char sign,
         unsigned char WIDE *in, unsigned int inlen,
         unsigned char *out, unsigned int outlen);
+
+#endif

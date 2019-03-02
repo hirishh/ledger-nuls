@@ -1,7 +1,8 @@
+#ifndef IO_PROTOCOL_H
+#define IO_PROTOCOL_H
+
 #include <stdbool.h>
 #include <inttypes.h>
-#ifndef IO_PROTOCOL
-#define IO_PROTOCOL
 
 /**
  * Adds a new buffer to the respose
@@ -38,8 +39,5 @@ typedef struct commPacket_t {
 
 extern commContext_t commContext;
 extern commPacket_t commPacket;
-
-uint64_t readUint64LE(uint8_t * data);
-uint8_t encodeVarInt(uint64_t value, uint8_t * whereTo);
 
 #endif

@@ -1,15 +1,14 @@
 #include "signTx.h"
-#include "../../io.h"
-#include "txs/nuls_tx_parser.h"
+#include "txs/common_parser.h"
 #include "txs/2_transfer.h"
 // #include "./txs/voteTx.h"
 // #include "./txs/createMultiSig.h"
 // #include "./txs/createSignatureTx.h"
 // #include "./txs/registerDelegateTx.h"
-#include "../approval.h"
-#include "../nuls_helpers.h"
-#include "../nuls_utils.h"
+#include "../nuls_internals.h"
 #include "../../ui_utils.h"
+#include "../../io.h"
+#include "os.h"
 
 #define TX_TYPE_CONSENSUS_REWARD 1
 #define TX_TYPE_TRANSFER_TX 2
@@ -56,12 +55,13 @@ static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int but
   return 0;
 }
 
-void handleSignTxPacket(commPacket_t *packet, commContext_t *commContext) {
+
+void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
   if ( packet->first ) {
     PRINTF("SIGN - First Packet\n");
-    // Reset sha256 and tx
-    cx_sha256_init(&txContext.txHash);
+    // Reset sha256 and digest
+    nuls_tx_context_init();
 
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
     // Set signing context from first packet and patches the .data and .length by removing header length
@@ -70,14 +70,8 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *commContext) {
     // fetch transaction type and init txContext for signing
     txContext.type = nuls_read_u16(packet->data, 0, 0);
     txContext.totalTxBytes = reqContext.signableContentLength;
-    PRINTF("reqContext.signableContentLength %d\n", reqContext.signableContentLength);
-    PRINTF("txContext.totalTxBytes %d\n", txContext.totalTxBytes);
-    txContext.tx_parsing_state = BEGINNING;
-    txContext.tx_parsing_group = COMMON;
-    txContext.bytesRead = 0;
-    txContext.saveBufferLength = 0;
-
     PRINTF("TYPE %d\n", txContext.type);
+    PRINTF("txContext.totalTxBytes %d\n", txContext.totalTxBytes);
 
     switch (txContext.type) {
       case TX_TYPE_TRANSFER_TX:
@@ -145,8 +139,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *commContext) {
       }
     }
   END_TRY;
-
-  PRINTF("SIGN - END_TRY\n");
 }
 
 static uint8_t default_step_processor(uint8_t cur) {
@@ -161,7 +153,7 @@ void finalizeSignTx(volatile unsigned int *flags) {
     THROW(INVALID_STATE);
 
   // Close sha256 and hash again
-  cx_hash_finalize(reqContext.digest, DIGEST_LENGTH);
+  cx_hash_finalize(txContext.digest, DIGEST_LENGTH);
 
   // Init user flow.
   step_processor = default_step_processor;

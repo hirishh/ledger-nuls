@@ -1,8 +1,8 @@
 #include "impl.h"
 #include "../io.h"
-#include "nuls_utils.h"
-#include "ui_elements_s.h"
+#include "nuls_internals.h"
 #include "./commands/getPubKey.h"
+#include "./commands/signTx.h"
 
 #define INS_GET_PUBLIC_KEY 0x04
 #define INS_SIGN 0x05

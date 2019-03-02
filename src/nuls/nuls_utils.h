@@ -1,33 +1,12 @@
+#ifndef NULS_UTILS_H
+#define NULS_UTILS_H
+
 #include <stdbool.h>
 #include "os.h"
 #include <inttypes.h>
 #include "../io.h"
 #include "secp256k1.h"
-#ifndef STRUCT_TX
-#define STRUCT_TX
 
-typedef struct reqContext_t {
-    cx_ecfp_private_key_t privateKey;
-    cx_ecfp_public_key_t publicKey;
-    uint8_t compressedPublicKey[33];
-    uint8_t chainCode[32];
-    uint8_t bip32pathLength;
-    uint32_t bip32path[MAX_BIP32_PATH];
-    uint8_t showConfirmation;
-    uint16_t chainId;
-    uint8_t addressVersion;
-    uint8_t address[33];
-
-    //For signature
-    uint16_t signableContentLength;
-
-    // Holds digest to sign
-    uint8_t digest[32];
-} reqContext_t;
-
-extern reqContext_t reqContext;
-
-#endif
 
 /**
  * Gets a bigendian representation of the usable publicKey
@@ -43,7 +22,7 @@ void nuls_compress_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encod
  * @param the encoded address.
  * @return number of address bytes
  */
-unsigned short nuls_public_key_to_encoded_base58(uint8_t *compressedPublicKey, uint16_t chainId, uint8_t addressVersion, uint8_t *out_address);
+unsigned short nuls_public_key_to_encoded_base58(uint8_t *compressedPublicKey, uint16_t chainId, uint8_t addressType, uint8_t *out_address);
 
 /**
  * Derive encoded base58 associated to the specific address (chainId + addresstype + ripemid160).
@@ -63,3 +42,5 @@ void setReqContextForSign(commPacket_t *packet);
  * @param packet the  buffer of communication packet.
  */
 void setReqContextForGetPubKey(commPacket_t *packet);
+
+#endif

@@ -2,13 +2,8 @@
 // Created by andrea on 09/12/18.
 //
 
+#include "common_parser.h"
 #include "2_transfer.h"
-#include "../../../io.h"
-#include "../../../ui_utils.h"
-#include "../../ui_elements_s.h"
-#include "../../nuls_utils.h"
-#include "../../nuls_helpers.h"
-#include "nuls_tx_parser.h"
 #include "../signTx.h"
 
 /**
@@ -43,7 +38,7 @@ static void uiProcessor_send(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
-      os_memmove(lineBuffer, &reqContext.address, 32);
+      os_memmove(lineBuffer, &reqContext.accountFrom.address, 32);
       lineBuffer[32] = '\0';
       break;
     case 2:

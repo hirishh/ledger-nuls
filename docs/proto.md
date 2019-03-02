@@ -99,8 +99,8 @@ Data will be:
 |------------------------------------|----------------|-------------|---------------------------------------|
 | Command                            |       1        |   04        |                                       |
 | Display Address on ledger?         |       1        | 0 or 1      | 0 = no show, 1 = display              |
-| Address type                       |       1        | 1 or 2 or 3 | 1 = default, 2 = contract, 3 = P2SH   |
 | # Of Bip32 paths                   |       1        |             |                                       |
+| Address type                       |       1        | 1 or 2 or 3 | 1 = P2PKH, 2 = contract, 3 = P2SH   |
 | First Derivation path              |       4        |             |    bigendian encoded                  |
 |               ...                  |       4        |             |           ^^                          |
 | Last Derivation path               |       4        |             |           ^^                          |
@@ -125,14 +125,19 @@ With the signing commands you can sign both transactions and messages.
 
 **Request**
 
-|  Description                       | Length (bytes) |             Info                    |
-|------------------------------------|----------------|-------------------------------------|
-| Command                            |       1        |  05 (sign p2pkh tx) 06 (sign msg)   |
-| Address type                       |       1        | 1 = default, 2 = contract, 3 = P2SH |
-| # Of Bip32 paths                   |       1        |                                     |
-| First Derivation path              |       1        |                                     |
-|               ...                  |       1        |                                     |
-| Last Derivation path               |       1        |                                     |
-| Data Length (BigEndian)            |       2        |                                     |
-| Data                               |       _        |  tx bytes or message bytes          |
+|  Description                         | Length (bytes) |             Info                    |
+|--------------------------------------|----------------|-------------------------------------|
+| Command                              |       1        |  05 (sign p2pkh tx) 06 (sign msg)   |
+| AccountFrom: # Of Bip44 paths        |       1        |                                     |
+| AccountFrom: Address type            |       1        | 1 = default, 2 = contract, 3 = P2SH |
+| AccountFrom: First Derivation path   |       4        |                                     |
+|               ...                    |       4        |                                     |
+| AccountFrom: Last Derivation path     |       4        |                                     |
+| AccountChange: # Of Bip44 paths      |       1        | If 0 -> No Change Output            |
+| AccountChange: Address type          |       1        | If there is AccountChange           |
+| AccountChange: First Derivation path |       4        | If there is AccountChange           |
+|               ...                    |       4        | If there is AccountChange           |
+| AccountChange:Last Derivation path   |       4        | If there is AccountChange           |
+| Data Length (BigEndian)              |       2        |                                     |
+| Data                                 |       _        |  tx bytes or message bytes          |
 

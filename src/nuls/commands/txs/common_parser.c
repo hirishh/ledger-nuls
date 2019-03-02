@@ -1,7 +1,5 @@
-#include "nuls_tx_parser.h"
-#include "../../nuls_utils.h"
-#include "../../nuls_helpers.h"
-#include "../signTx.h"
+#include "common_parser.h"
+#include "../../nuls_internals.h"
 
 void parse_group_common() {
 
@@ -271,8 +269,6 @@ void check_sanity_before_sign() {
   if(txContext.bytesChunkRemaining != 0 || txContext.bytesRead != txContext.totalTxBytes) {
     THROW(INVALID_STATE);
   }
-
-  PRINTF("NO throw here\n");
 
   txContext.tx_parsing_group = TX_PARSED;
   txContext.tx_parsing_state = READY_TO_SIGN;

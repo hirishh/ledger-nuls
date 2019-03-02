@@ -2,13 +2,13 @@
 #include "os.h"
 #include "cx.h"
 #include "secp256k1.h"
-#include "nuls_helpers.h"
+#include "nuls_internals.h"
 
 #define LIBN_CURVE CX_CURVE_256K1
 
-void nuls_private_derive_keypair(uint32_t *bip32Path, uint8_t bip32PathLength, cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *publicKey, uint8_t *out_chainCode) {
+void nuls_private_derive_keypair(uint32_t *bip32Path, uint8_t bip32Length, cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *publicKey, uint8_t *out_chainCode) {
   uint8_t privateKeyData[32];
-  os_perso_derive_node_bip32(LIBN_CURVE, bip32Path, bip32PathLength, privateKeyData, out_chainCode);
+  os_perso_derive_node_bip32(LIBN_CURVE, bip32Path, bip32Length, privateKeyData, out_chainCode);
 
   BEGIN_TRY {
     TRY {
