@@ -4,7 +4,6 @@
 
 
 void touch_deny() {
-  PRINTF("touch_deny\n");
   G_io_apdu_buffer[0] = 0x69;
   G_io_apdu_buffer[1] = 0x85;
 
@@ -13,7 +12,7 @@ void touch_deny() {
   commContext.read = 0;
 
   // Kill private key - shouldn't be necessary but just in case.
-  os_memset(&reqContext.accountFrom.privateKey, 0, sizeof(reqContext.accountFrom.privateKey));
+  os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
 
   // Send back the response, do not restart the event loop
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, 2);
@@ -22,18 +21,17 @@ void touch_deny() {
 }
 
 void touch_approve() {
-  PRINTF("touch_approve\n");
   uint8_t signature[255];
   os_memset(signature, 0, 255);
 
   // Derive priv-pub again
   nuls_private_derive_keypair(reqContext.accountFrom.path, reqContext.accountFrom.pathLength,
-                              &reqContext.accountFrom.privateKey, &reqContext.accountFrom.publicKey, reqContext.accountFrom.chainCode);
+                              &reqContext.privateKey, &reqContext.publicKey, reqContext.accountFrom.chainCode);
 
-  unsigned short signatureSize = nuls_signverify_finalhash(&(reqContext.accountFrom.privateKey), 1, txContext.digest, sizeof(txContext.digest), signature, sizeof(signature));
+  unsigned short signatureSize = nuls_signverify_finalhash(&reqContext.privateKey, 1, txContext.digest, sizeof(txContext.digest), signature, sizeof(signature));
 
   //Paranoid
-  os_memset(&reqContext.accountFrom.privateKey, 0, sizeof(reqContext.accountFrom.privateKey));
+  os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
 
   initResponse();
   addToResponse(signature, signatureSize);

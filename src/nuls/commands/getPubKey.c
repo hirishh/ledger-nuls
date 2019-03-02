@@ -3,9 +3,7 @@
 //
 
 #include "getPubKey.h"
-#include "../nuls_internals.h"
 #include "../../ui_utils.h"
-#include "../../io.h"
 #include "os.h"
 
 
@@ -23,6 +21,8 @@ static const bagl_element_t verify_address_ui[] = {
  */
 static void createPublicKeyResponse() {
   initResponse();
+
+  deriveAccountAddress(&(reqContext.accountFrom));
 
   //ChainCode
   addToResponse(reqContext.accountFrom.chainCode, 32);

@@ -11,12 +11,13 @@
  * @param bip32PathLength
  * @param privateKey
  * @param publicKey
+ * @param out_chainCode
  * @return read data to derive private public
  */
 void nuls_private_derive_keypair(
-        uint32_t *bip32Path, uint8_t bip32PathLength,
-        cx_ecfp_private_key_t *privateKey,
-        cx_ecfp_public_key_t *publicKey,
+        uint32_t WIDE *bip32Path, uint8_t bip32PathLength,
+        cx_ecfp_private_key_t WIDE *privateKey,
+        cx_ecfp_public_key_t WIDE *publicKey,
         uint8_t *out_chainCode);
 
 void nuls_bip32_buffer_to_array(

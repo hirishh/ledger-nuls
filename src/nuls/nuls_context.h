@@ -10,19 +10,19 @@
  */
 
 typedef struct local_address {
-    cx_ecfp_private_key_t privateKey;
-    cx_ecfp_public_key_t publicKey;
     uint8_t compressedPublicKey[33];
+    uint32_t path[MAX_BIP32_PATH];
+    uint8_t pathLength;
     uint8_t chainCode[32];
     uint16_t chainId;
-    uint8_t pathLength;
     uint8_t type;
-    uint32_t path[MAX_BIP32_PATH];
     uint8_t address[33];
 } local_address_t;
 
 typedef struct request_context {
     uint8_t showConfirmation;
+    cx_ecfp_private_key_t privateKey;
+    cx_ecfp_public_key_t publicKey;
 
     local_address_t accountFrom;
     local_address_t accountChange;
@@ -30,6 +30,8 @@ typedef struct request_context {
     //For signature
     uint16_t signableContentLength;
 } reqContext_t;
+
+void reset_local_address(local_address_t *localAddress);
 
 extern reqContext_t reqContext;
 

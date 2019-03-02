@@ -13,7 +13,7 @@
  * @param publicKey the raw public key containing both coordinated for the elliptic curve
  * @param encoded result holder
  */
-void nuls_compress_publicKey(cx_ecfp_public_key_t *publicKey, uint8_t *out_encoded);
+void nuls_compress_publicKey(cx_ecfp_public_key_t WIDE *publicKey, uint8_t *out_encoded);
 
 
 /**
@@ -42,5 +42,7 @@ void setReqContextForSign(commPacket_t *packet);
  * @param packet the  buffer of communication packet.
  */
 void setReqContextForGetPubKey(commPacket_t *packet);
+
+void deriveAccountAddress(local_address_t WIDE *account);
 
 #endif

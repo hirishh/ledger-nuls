@@ -7,5 +7,6 @@ extern reqContext_t reqContext;
 extern transaction_context_t txContext;
 
 void nuls_tx_context_init();
+void nuls_req_context_init();
 
 #endif

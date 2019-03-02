@@ -1,5 +1,5 @@
-#ifndef BTCHIP_HELPERS_H
-#define BTCHIP_HELPERS_H
+#ifndef NULS_HELPERS_H
+#define NULS_HELPERS_H
 
 void nuls_write_u32_be(unsigned char *buffer, unsigned long int value);
 void nuls_write_u32_le(unsigned char *buffer, unsigned long int value);

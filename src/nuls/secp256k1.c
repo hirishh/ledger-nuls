@@ -6,7 +6,8 @@
 
 #define LIBN_CURVE CX_CURVE_256K1
 
-void nuls_private_derive_keypair(uint32_t *bip32Path, uint8_t bip32Length, cx_ecfp_private_key_t *privateKey, cx_ecfp_public_key_t *publicKey, uint8_t *out_chainCode) {
+void nuls_private_derive_keypair(uint32_t WIDE *bip32Path, uint8_t bip32Length,
+        cx_ecfp_private_key_t WIDE *privateKey, cx_ecfp_public_key_t WIDE *publicKey, uint8_t *out_chainCode) {
   uint8_t privateKeyData[32];
   os_perso_derive_node_bip32(LIBN_CURVE, bip32Path, bip32Length, privateKeyData, out_chainCode);
 

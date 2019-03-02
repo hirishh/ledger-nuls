@@ -53,6 +53,5 @@ unsigned int flushResponseToIO(void *out) {
   return total;
 }
 
-
 commContext_t commContext;
 commPacket_t commPacket;

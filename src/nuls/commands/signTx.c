@@ -62,6 +62,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     PRINTF("SIGN - First Packet\n");
     // Reset sha256 and digest
     nuls_tx_context_init();
+    nuls_req_context_init();
 
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
     // Set signing context from first packet and patches the .data and .length by removing header length
@@ -79,13 +80,15 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         tx_end = tx_finalize_2_transfer;
         break;
       default:
-        THROW(NOT_SUPPORTED);
+        //THROW(NOT_SUPPORTED);
+        PRINTF("TYPE not supported\n");
     }
 
   }
 
   //insert at beginning saveBufferForNextChunk if present
   if(txContext.saveBufferLength > 0) {
+    PRINTF("saveBufferLength handler\n");
     uint8_t tmpBuffer[600];
     os_memmove(tmpBuffer, packet->data, packet->length);
     os_memmove(packet->data, txContext.saveBufferForNextChunk, txContext.saveBufferLength);
@@ -94,7 +97,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     txContext.saveBufferLength = 0;
   }
 
-  PRINTF("SIGN - Handler\n");
+  //PRINTF("SIGN - Handler\n");
 
   txContext.bufferPointer = packet->data;
   txContext.bytesChunkRemaining = packet->length;
@@ -125,6 +128,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
             default:
               THROW(INVALID_STATE);
           }
+          CLOSE_TRY;
         }
       CATCH_OTHER(e) {
           if(e == NEED_NEXT_CHUNK) {
@@ -132,6 +136,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
             txContext.saveBufferLength = txContext.bytesChunkRemaining;
           } else {
             //Unexpected Error during parsing. Let the client know
+            PRINTF("THROW\n");
             THROW(e);
           }
         }
@@ -148,7 +153,7 @@ static uint8_t default_step_processor(uint8_t cur) {
 
 void finalizeSignTx(volatile unsigned int *flags) {
 
-  PRINTF("finalizeSignTx\n");
+  //PRINTF("finalizeSignTx\n");
   if(txContext.tx_parsing_group != TX_PARSED || txContext.tx_parsing_state != READY_TO_SIGN)
     THROW(INVALID_STATE);
 

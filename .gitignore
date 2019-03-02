@@ -3,3 +3,9 @@ bin/
 debug/
 dep/
 customCA.key
+customCA.pub
+.idea/
+CMakeLists.txt
+cmake-build-debug/
+src/glyphs.c
+src/glyphs.h

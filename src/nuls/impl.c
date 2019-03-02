@@ -19,6 +19,7 @@ void innerHandleCommPacket(commPacket_t *packet, commContext_t *context) {
     case INS_SIGN:
       PRINTF("handleSignTxPacket - pre innerHandleCommPacket\n");
       handleSignTxPacket(packet, context);
+      PRINTF("handleSignTxPacket - post innerHandleCommPacket\n");
       break;
     case INS_PING:
     case INS_VERSION:

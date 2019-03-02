@@ -21,6 +21,7 @@
 #include <memory.h>
 #include "os.h"
 #include "main.h"
+#include "nuls/nuls_ui_elements.h"
 
 #include "io.h"
 #include "nuls/impl.h"
@@ -88,7 +89,7 @@ void handleCommPacket() {
     THROW(0x9802); // CODE_NOT_INITIALIZED
   }
 
-  PRINTF("handleCommPacket\n");
+  //PRINTF("handleCommPacket\n");
 
   if (commContext.read == 0) {
     // IF first packet we read command and strip it away from the data packet
@@ -107,9 +108,8 @@ void handleCommPacket() {
 
   if (commContext.read <= commContext.totalAmount) {
     // Allow real implementation to handle current comm Packet. (and possibly throw if error occurred)
-    PRINTF("BEFORE innerHandleCommPacket\n");
+    //PRINTF("BEFORE innerHandleCommPacket\n");
     innerHandleCommPacket(&commPacket, &commContext);
-
     // Compute current crc and replace it with the prevOne.
     crc = cx_crc16(G_io_apdu_buffer + 5, G_io_apdu_buffer[4]);
     prevCRC = commContext.crc16;
@@ -153,7 +153,6 @@ static void nuls_main(void) {
   // APDU injection faults.
   for (;;) {
     volatile unsigned short sw = 0;
-
     BEGIN_TRY
       {
         TRY
@@ -162,6 +161,7 @@ static void nuls_main(void) {
             tx = 0; // ensure no race in catch_other if io_exchange throws
             // an error
             rx = io_exchange(CHANNEL_APDU | flags, rx);
+            PRINTF("POST io_exchange\n");
             flags = 0;
 
             // no apdu received, well, reset the session, and reset the
