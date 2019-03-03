@@ -1,8 +1,8 @@
 #include "stdbool.h"
-#include "os.h"
-#include "cx.h"
 #include "secp256k1.h"
 #include "nuls_internals.h"
+#include "os.h"
+#include "cx.h"
 
 #define LIBN_CURVE CX_CURVE_256K1
 

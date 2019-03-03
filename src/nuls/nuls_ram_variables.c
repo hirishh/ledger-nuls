@@ -1,7 +1,7 @@
 
+
 #include "nuls_ram_variables.h"
-#include "os.h"
-#include "cx.h"
+#include "nuls_context.h"
 
 request_context_t reqContext;
 transaction_context_t txContext;

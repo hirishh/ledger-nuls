@@ -1,7 +1,3 @@
-//
-// Created by andrea on 09/12/18.
-//
-
 #include "common_parser.h"
 #include "2_transfer.h"
 #include "../signTx.h"
@@ -39,7 +35,7 @@ static void uiProcessor_send(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
-      //deriveAccountAddress(&reqContext.accountFrom);
+      deriveAccountAddress(&reqContext.accountFrom);
       os_memmove(lineBuffer, &reqContext.accountFrom.address, 32);
       lineBuffer[32] = '\0';
       break;

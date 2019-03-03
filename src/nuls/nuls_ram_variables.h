@@ -1,9 +1,10 @@
 #ifndef NULS_RAM_VARIABLES_H
 #define NULS_RAM_VARIABLES_H
 
-#include "nuls_internals.h"
 #include "os.h"
 #include "cx.h"
+#include "nuls_context.h"
+
 
 extern request_context_t reqContext;
 extern transaction_context_t txContext;

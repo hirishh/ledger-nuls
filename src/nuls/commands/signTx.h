@@ -1,9 +1,10 @@
 #ifndef SIGNTX_H
 #define SIGNTX_H
 
-#include "../../io.h"
+
 #include "../nuls_internals.h"
 #include "../../ui_utils.h"
+#include "../../io.h"
 
 typedef void (*ui_processor_fn)(uint8_t curStep);
 typedef uint8_t (*step_processor_fn)(uint8_t curStep);

@@ -1,5 +1,4 @@
 #include "nuls_helpers.h"
-#include "nuls_internals.h"
 
 void nuls_write_u32_be(unsigned char *buffer, unsigned long int value) {
   buffer[0] = ((value >> 24) & 0xff);

@@ -1,7 +1,7 @@
 #ifndef NULS_CONTEXT_H
 #define NULS_CONTEXT_H
 
-#include "nuls_internals.h"
+#include "nuls_constants.h"
 #include "os.h"
 #include "cx.h"
 

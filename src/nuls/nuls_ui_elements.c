@@ -1,8 +1,9 @@
 #include <string.h>
-#include "os_io_seproxyhal.h"
 #include "nuls_internals.h"
-#include "../glyphs.h"
 #include "../ui_utils.h"
+#include "os_io_seproxyhal.h"
+#include "../glyphs.h"
+
 
 #define SCRATCH_SIZE 21
 

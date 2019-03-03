@@ -2,10 +2,10 @@
 #include <string.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include "nuls_utils.h"
 #include "os.h"
 #include "cx.h"
-#include "nuls_internals.h"
-#include "../io.h"
+
 
 void nuls_compress_publicKey(cx_ecfp_public_key_t WIDE *publicKey, uint8_t *out_encoded) {
   os_memmove(out_encoded, publicKey->W, 33);
@@ -80,7 +80,7 @@ void printAccountInfo(local_address_t *account) {
   PRINTF("account->address %s\n", account->address);
 }
 
-uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
+uint32_t extractAccountInfo(uint8_t *data, local_address_t WIDE *account) {
   uint32_t readCounter = 0;
 
   //PathLength
@@ -113,7 +113,8 @@ uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
   //Set chainId from account->path[1]
   account->chainId = (uint16_t) account->path[1]^0x80000000;
 
-  deriveAccountAddress(account);
+  //TODO HERE IS NOT WORKING. Freezing the ledger
+  //deriveAccountAddress(account);
 
   return readCounter;
 }
@@ -129,6 +130,7 @@ void setReqContextForSign(commPacket_t *packet) {
   //AccountChange
   headerBytesRead += extractAccountInfo(packet->data + headerBytesRead, &(reqContext.accountChange));
   printAccountInfo(&(reqContext.accountChange));
+
 
   //Check chainId is the same if (any) change address
   if(reqContext.accountChange.pathLength > 0 && (reqContext.accountChange.chainId != reqContext.accountFrom.chainId)) {
@@ -164,7 +166,7 @@ void deriveAccountAddress(local_address_t WIDE *account) {
   // Derive pubKey
   nuls_private_derive_keypair(account->path, account->pathLength, account->chainCode);
   //Paranoid
-  os_memset(&private_key, 0, sizeof(reqContext.privateKey));
+  //os_memset(&private_key, 0, sizeof(private_key));
   //Gen Compressed PubKey
   nuls_compress_publicKey(&public_key, account->compressedPublicKey);
   //Compressed PubKey -> Address

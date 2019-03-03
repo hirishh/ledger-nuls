@@ -1,14 +1,14 @@
 #include "signTx.h"
+#include "../nuls_internals.h"
+#include "os.h"
+
 #include "txs/common_parser.h"
 #include "txs/2_transfer.h"
 // #include "./txs/voteTx.h"
 // #include "./txs/createMultiSig.h"
 // #include "./txs/createSignatureTx.h"
 // #include "./txs/registerDelegateTx.h"
-#include "../nuls_internals.h"
-#include "../../ui_utils.h"
-#include "../../io.h"
-#include "os.h"
+
 
 #define TX_TYPE_CONSENSUS_REWARD 1
 #define TX_TYPE_TRANSFER_TX 2
