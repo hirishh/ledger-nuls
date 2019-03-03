@@ -6,7 +6,6 @@
 #include "os.h"
 
 /**
- *
  * @param bip32Path
  * @param bip32PathLength
  * @param privateKey
@@ -18,6 +17,12 @@ void nuls_private_derive_keypair(
         uint32_t WIDE *bip32Path, uint8_t bip32PathLength,
         uint8_t *out_chainCode);
 
+/**
+ * @param bip32PathBuffer
+ * @param bip32PathLength
+ * @param out_bip32PathArray
+ * @return read data to derive private public
+ */
 void nuls_bip32_buffer_to_array(
         uint8_t *bip32DataBuffer,
         uint8_t bip32PathLength,

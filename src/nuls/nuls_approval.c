@@ -34,15 +34,21 @@ void touch_approve() {
   initResponse();
   addToResponse(signature, signatureSize);
 
-  // Allow restart of operation
-  commContext.started = false;
-  commContext.read = 0;
-
   unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
   G_io_apdu_buffer[tx]   = 0x90;
   G_io_apdu_buffer[tx+1] = 0x00;
 
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
+
+  //reset contexts
+  os_memset(&reqContext, 0, sizeof(reqContext));
+  os_memset(&txContext, 0, sizeof(txContext));
+  os_memset(&commContext, 0, sizeof(commContext));
+  os_memset(&commPacket, 0, sizeof(commPacket));
+
+  // Allow restart of operation
+  commContext.started = false;
+  commContext.read = 0;
 
   // Display back the original UX
   ui_idle();

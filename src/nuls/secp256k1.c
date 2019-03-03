@@ -21,6 +21,7 @@ void nuls_private_derive_keypair(uint32_t WIDE *bip32Path, uint8_t bip32Length, 
 
   // Clean up!
   os_memset(privateKeyData, 0, sizeof(privateKeyData));
+
 }
 
 void nuls_bip32_buffer_to_array(uint8_t *bip32DataBuffer, uint8_t bip32PathLength, uint32_t *out_bip32Path) {

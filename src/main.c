@@ -268,6 +268,8 @@ __attribute__((section(".boot"))) int main(void) {
   // exit critical section
   __asm volatile("cpsie i");
 
+  init_canary();
+
   UX_INIT();
 
   // ensure exception will work as planned
@@ -283,6 +285,7 @@ __attribute__((section(".boot"))) int main(void) {
           io_seproxyhal_init();
 
           // Consider using an internal storage thingy here
+
 
           USB_power(0);
           USB_power(1);

@@ -35,14 +35,12 @@ static void uiProcessor_send(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
-      deriveAccountAddress(&reqContext.accountFrom);
       os_memmove(lineBuffer, &reqContext.accountFrom.address, 32);
       lineBuffer[32] = '\0';
       break;
     case 2:
       nuls_address_to_encoded_base58(txContext.outputAddress, addressToShow);
       os_memmove(lineBuffer, addressToShow, 32);
-      lineBuffer[32] = '\0';
       break;
     case 3:
       os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
@@ -108,7 +106,6 @@ void tx_parse_specific_2_transfer() {
     default:
       THROW(INVALID_STATE);
   }
-
 }
 
 void tx_finalize_2_transfer() {

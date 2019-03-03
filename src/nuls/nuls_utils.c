@@ -80,7 +80,7 @@ void printAccountInfo(local_address_t *account) {
   PRINTF("account->address %s\n", account->address);
 }
 
-uint32_t extractAccountInfo(uint8_t *data, local_address_t WIDE *account) {
+uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
   uint32_t readCounter = 0;
 
   //PathLength
@@ -105,21 +105,18 @@ uint32_t extractAccountInfo(uint8_t *data, local_address_t WIDE *account) {
   }
 
   //Path
-  uint8_t bip32buffer[45];
-  os_memmove(bip32buffer, data + 2, account->pathLength * 4);
+  nuls_bip32_buffer_to_array(data + 2, account->pathLength, account->path);
   readCounter += account->pathLength * 4;
-  nuls_bip32_buffer_to_array(bip32buffer, account->pathLength, account->path);
 
   //Set chainId from account->path[1]
   account->chainId = (uint16_t) account->path[1]^0x80000000;
 
-  //TODO HERE IS NOT WORKING. Freezing the ledger
-  //deriveAccountAddress(account);
+  deriveAccountAddress(account);
 
   return readCounter;
 }
 
-void setReqContextForSign(commPacket_t *packet) {
+uint32_t setReqContextForSign(commPacket_t *packet) {
   reqContext.signableContentLength = 0;
   uint32_t headerBytesRead = 0;
 
@@ -139,36 +136,33 @@ void setReqContextForSign(commPacket_t *packet) {
 
   //Data Length
   reqContext.signableContentLength = nuls_read_u16(packet->data + headerBytesRead, 1, 0);
+  headerBytesRead += 2;
   PRINTF("reqContext.signableContentLength %d\n", reqContext.signableContentLength);
   // Check signable content length if is correct
   if (reqContext.signableContentLength >= commContext.totalAmount) {
     THROW(0x6700); // INCORRECT_LENGTH
   }
-  headerBytesRead += 2;
 
-  // clean up packet->data by removing the consumed content (sign context)
-  uint8_t tmpBuffer[256];
-  os_memmove(tmpBuffer, packet->data + headerBytesRead, packet->length - headerBytesRead);
-  os_memmove(packet->data, tmpBuffer, packet->length - headerBytesRead);
-  packet->length = packet->length - headerBytesRead;
-  PRINTF("packet->length %d\n", packet->length);
-  PRINTF("packet-data %.*H\n", packet->length, &packet->data);
+  PRINTF("packet->length %d\n", packet->length - headerBytesRead);
+  PRINTF("packet-data %.*H\n", packet->length - headerBytesRead, &packet->data + headerBytesRead);
+  return headerBytesRead;
 }
 
-void setReqContextForGetPubKey(commPacket_t *packet) {
+uint32_t setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.showConfirmation = packet->data[0];
-  extractAccountInfo(packet->data + 1, &reqContext.accountFrom);
+  return extractAccountInfo(packet->data + 1, &reqContext.accountFrom);
 }
 
 
-void deriveAccountAddress(local_address_t WIDE *account) {
+void deriveAccountAddress(local_address_t *account) {
 
   // Derive pubKey
   nuls_private_derive_keypair(account->path, account->pathLength, account->chainCode);
   //Paranoid
-  //os_memset(&private_key, 0, sizeof(private_key));
+  os_memset(&private_key, 0, sizeof(private_key));
   //Gen Compressed PubKey
   nuls_compress_publicKey(&public_key, account->compressedPublicKey);
+
   //Compressed PubKey -> Address
   nuls_public_key_to_encoded_base58(account->compressedPublicKey, account->chainId,
                                     account->type, account->address);

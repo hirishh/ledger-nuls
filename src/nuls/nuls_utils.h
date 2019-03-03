@@ -36,15 +36,17 @@ unsigned short nuls_address_to_encoded_base58(uint8_t *address, uint8_t *out_add
 /**
  * Reads the packet for Sign requests (tx and msg), sets the reqContext and patches the packet data values by skipping the header.
  * @param packet the  buffer of communication packet.
+ * @return number of bytes read
  */
-void setReqContextForSign(commPacket_t *packet);
+uint32_t setReqContextForSign(commPacket_t *packet);
 
 /**
  * Reads the packet for getPubKey requests, sets the reqContext and patches the packet data values by skipping the header.
  * @param packet the  buffer of communication packet.
+ * @return number of bytes read
  */
-void setReqContextForGetPubKey(commPacket_t *packet);
+uint32_t setReqContextForGetPubKey(commPacket_t *packet);
 
-void deriveAccountAddress(local_address_t WIDE *account);
+void deriveAccountAddress(local_address_t *account);
 
 #endif

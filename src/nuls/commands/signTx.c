@@ -4,10 +4,6 @@
 
 #include "txs/common_parser.h"
 #include "txs/2_transfer.h"
-// #include "./txs/voteTx.h"
-// #include "./txs/createMultiSig.h"
-// #include "./txs/createSignatureTx.h"
-// #include "./txs/registerDelegateTx.h"
 
 
 #define TX_TYPE_CONSENSUS_REWARD 1
@@ -54,6 +50,9 @@ static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int but
 
 
 void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
+
+  uint32_t headerBytesRead = 0;
+
   // if first packet with signing header
   if ( packet->first ) {
     PRINTF("SIGN - First Packet\n");
@@ -66,14 +65,11 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     txContext.bufferPointer = NULL;
 
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
-    // Set signing context from first packet and patches the .data and .length by removing header length
-    setReqContextForSign(packet);
+    // Set signing context by parsing bip32paths and other info. function returns number of bytes read (not part of TX)
+    headerBytesRead = setReqContextForSign(packet);
 
-    // fetch transaction type and init txContext for signing
-    txContext.type = nuls_read_u16(packet->data, 0, 0);
+    txContext.type = nuls_read_u16(packet->data + headerBytesRead, 0, 0);
     txContext.totalTxBytes = reqContext.signableContentLength;
-    PRINTF("TYPE %d\n", txContext.type);
-    PRINTF("txContext.totalTxBytes %d\n", txContext.totalTxBytes);
 
     switch (txContext.type) {
       case TX_TYPE_TRANSFER_TX:
@@ -81,7 +77,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         tx_end = tx_finalize_2_transfer;
         break;
       default:
-        //PRINTF("TYPE not supported\n");
+        PRINTF("TYPE not supported\n");
         THROW(NOT_SUPPORTED);
     }
 
@@ -90,18 +86,27 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   //insert at beginning saveBufferForNextChunk if present
   if(txContext.saveBufferLength > 0) {
     PRINTF("saveBufferLength handler\n");
-    uint8_t tmpBuffer[500];
-    os_memmove(tmpBuffer, packet->data, packet->length);
-    os_memmove(packet->data, txContext.saveBufferForNextChunk, txContext.saveBufferLength);
-    os_memmove(packet->data + txContext.saveBufferLength, packet->data, packet->length);
+    //Shift TX payload (without header) of saveBufferLength bytes on the right
+    os_memmove(
+            packet->data + headerBytesRead + txContext.saveBufferLength,
+            packet->data + headerBytesRead,
+            packet->length - headerBytesRead
+            );
+    //Copy saved buffer in the correct position (beginning of new tx data)
+    os_memmove(
+            packet->data + headerBytesRead,
+            txContext.saveBufferForNextChunk,
+            txContext.saveBufferLength
+            );
     packet->length += txContext.saveBufferLength;
     txContext.saveBufferLength = 0;
+    os_memset(txContext.saveBufferForNextChunk, 0, sizeof(txContext.saveBufferForNextChunk));
   }
 
   PRINTF("SIGN - Handler\n");
 
-  txContext.bufferPointer = packet->data;
-  txContext.bytesChunkRemaining = packet->length;
+  txContext.bufferPointer = packet->data + headerBytesRead;
+  txContext.bytesChunkRemaining = packet->length - headerBytesRead;
 
   BEGIN_TRY {
       TRY {
@@ -146,8 +151,7 @@ static uint8_t default_step_processor(uint8_t cur) {
 
 
 void finalizeSignTx(volatile unsigned int *flags) {
-
-  //PRINTF("finalizeSignTx\n");
+  PRINTF("finalizeSignTx\n");
   if(txContext.tx_parsing_group != TX_PARSED || txContext.tx_parsing_state != READY_TO_SIGN)
     THROW(INVALID_STATE);
 

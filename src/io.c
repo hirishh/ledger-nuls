@@ -46,7 +46,6 @@ unsigned int flushResponseToIO(void *out) {
     os_memmove(out + total, response.what[i], response.whatLength[i]);
     total += response.whatLength[i];
   }
-
   // Reset.
   initResponse();
 
