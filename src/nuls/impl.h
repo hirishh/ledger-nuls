@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include "../io.h"
+#include "nuls_internals.h"
 
 #ifndef LEDGER_NANO2_IMPL_H
 #define LEDGER_NANO2_IMPL_H

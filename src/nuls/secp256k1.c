@@ -6,15 +6,14 @@
 
 #define LIBN_CURVE CX_CURVE_256K1
 
-void nuls_private_derive_keypair(uint32_t WIDE *bip32Path, uint8_t bip32Length,
-        cx_ecfp_private_key_t WIDE *privateKey, cx_ecfp_public_key_t WIDE *publicKey, uint8_t *out_chainCode) {
+void nuls_private_derive_keypair(uint32_t WIDE *bip32Path, uint8_t bip32Length, uint8_t *out_chainCode) {
   uint8_t privateKeyData[32];
   os_perso_derive_node_bip32(LIBN_CURVE, bip32Path, bip32Length, privateKeyData, out_chainCode);
 
   BEGIN_TRY {
     TRY {
-        cx_ecdsa_init_private_key(LIBN_CURVE, privateKeyData, 32, privateKey);
-        cx_ecfp_generate_pair(LIBN_CURVE, publicKey, privateKey, 1);
+        cx_ecdsa_init_private_key(LIBN_CURVE, privateKeyData, 32, &private_key);
+        cx_ecfp_generate_pair(LIBN_CURVE, &public_key, &private_key, 1);
       }
     FINALLY {}
   }
@@ -37,18 +36,18 @@ void nuls_bip32_buffer_to_array(uint8_t *bip32DataBuffer, uint8_t bip32PathLengt
 }
 
 unsigned short nuls_signverify_finalhash(
-        cx_ecfp_private_key_t WIDE *privateKey, unsigned char sign,
+        void WIDE *keyContext, unsigned char sign,
         unsigned char WIDE *in, unsigned int inlen,
         unsigned char *out, unsigned int outlen) {
   int result = 0;
   if(sign) {
     unsigned int info = 0;
-    result = cx_ecdsa_sign(privateKey, CX_LAST | CX_RND_RFC6979, CX_SHA256, in, inlen, out, outlen, &info);
+    result = cx_ecdsa_sign((cx_ecfp_private_key_t WIDE *) keyContext, CX_LAST | CX_RND_RFC6979, CX_SHA256, in, inlen, out, outlen, &info);
     if (info & CX_ECCINFO_PARITY_ODD) {
       out[0] |= 0x01;
     }
   } else {
-    result = cx_ecdsa_verify(privateKey, CX_LAST, CX_SHA256, in, inlen, out, outlen);
+    result = cx_ecdsa_verify((cx_ecfp_public_key_t WIDE *) keyContext, CX_LAST, CX_SHA256, in, inlen, out, outlen);
   }
   return result;
 }

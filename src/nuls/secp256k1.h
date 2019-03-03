@@ -16,8 +16,6 @@
  */
 void nuls_private_derive_keypair(
         uint32_t WIDE *bip32Path, uint8_t bip32PathLength,
-        cx_ecfp_private_key_t WIDE *privateKey,
-        cx_ecfp_public_key_t WIDE *publicKey,
         uint8_t *out_chainCode);
 
 void nuls_bip32_buffer_to_array(
@@ -36,7 +34,7 @@ void nuls_bip32_buffer_to_array(
  * @return signLength if signMode, 0 or 1 if verify mode
  */
 unsigned short nuls_signverify_finalhash(
-        cx_ecfp_private_key_t WIDE *privateKey, unsigned char sign,
+        void WIDE *keyContext, unsigned char sign,
         unsigned char WIDE *in, unsigned int inlen,
         unsigned char *out, unsigned int outlen);
 

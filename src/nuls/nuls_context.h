@@ -1,7 +1,7 @@
 #ifndef NULS_CONTEXT_H
 #define NULS_CONTEXT_H
 
-#include "nuls_constants.h"
+#include "nuls_internals.h"
 #include "os.h"
 #include "cx.h"
 
@@ -21,19 +21,14 @@ typedef struct local_address {
 
 typedef struct request_context {
     uint8_t showConfirmation;
-    cx_ecfp_private_key_t privateKey;
-    cx_ecfp_public_key_t publicKey;
 
     local_address_t accountFrom;
     local_address_t accountChange;
 
     //For signature
     uint16_t signableContentLength;
-} reqContext_t;
+} request_context_t;
 
-void reset_local_address(local_address_t *localAddress);
-
-extern reqContext_t reqContext;
 
 /**
  * Transaction Context
@@ -128,8 +123,5 @@ typedef struct transaction_context {
     unsigned char changeAmount[AMOUNT_LENGTH];
 
 } transaction_context_t;
-
-extern transaction_context_t txContext;
-
 
 #endif

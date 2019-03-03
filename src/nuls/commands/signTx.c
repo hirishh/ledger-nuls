@@ -33,9 +33,6 @@ tx_end_fn tx_end;
 ui_processor_fn ui_processor;
 step_processor_fn step_processor;
 
-transaction_context_t txContext;
-reqContext_t reqContext;
-
 static unsigned int ui_sign_tx_button(unsigned int button_mask, unsigned int button_mask_counter) {
   switch (button_mask) {
     case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
@@ -60,9 +57,13 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   // if first packet with signing header
   if ( packet->first ) {
     PRINTF("SIGN - First Packet\n");
-    // Reset sha256 and digest
-    nuls_tx_context_init();
-    nuls_req_context_init();
+    // Reset sha256 and context
+    os_memset(&reqContext, 0, sizeof(reqContext));
+    os_memset(&txContext, 0, sizeof(txContext));
+    cx_sha256_init(&txContext.txHash);
+    txContext.tx_parsing_state = BEGINNING;
+    txContext.tx_parsing_group = COMMON;
+    txContext.bufferPointer = NULL;
 
     // IMPORTANT this logic below only works if the first packet contains the needed information (Which it should)
     // Set signing context from first packet and patches the .data and .length by removing header length
@@ -80,8 +81,8 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         tx_end = tx_finalize_2_transfer;
         break;
       default:
-        //THROW(NOT_SUPPORTED);
-        PRINTF("TYPE not supported\n");
+        //PRINTF("TYPE not supported\n");
+        THROW(NOT_SUPPORTED);
     }
 
   }
@@ -89,7 +90,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   //insert at beginning saveBufferForNextChunk if present
   if(txContext.saveBufferLength > 0) {
     PRINTF("saveBufferLength handler\n");
-    uint8_t tmpBuffer[600];
+    uint8_t tmpBuffer[500];
     os_memmove(tmpBuffer, packet->data, packet->length);
     os_memmove(packet->data, txContext.saveBufferForNextChunk, txContext.saveBufferLength);
     os_memmove(packet->data + txContext.saveBufferLength, packet->data, packet->length);
@@ -97,7 +98,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     txContext.saveBufferLength = 0;
   }
 
-  //PRINTF("SIGN - Handler\n");
+  PRINTF("SIGN - Handler\n");
 
   txContext.bufferPointer = packet->data;
   txContext.bytesChunkRemaining = packet->length;
@@ -106,32 +107,26 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       TRY {
           switch(txContext.tx_parsing_group) {
             case COMMON:
-              PRINTF("GROUP: COMMON\n");
               parse_group_common();
             case TX_SPECIFIC:
-              PRINTF("GROUP: TX_SPECIFIC\n");
               if(txContext.tx_parsing_group != TX_SPECIFIC) {
                 THROW(INVALID_STATE);
               }
               tx_parse();
             case COIN_INPUT:
-              PRINTF("GROUP: COIN_INPUT\n");
               parse_group_coin_input();
             case COIN_OUTPUT:
-              PRINTF("GROUP: COIN_OUTPUT\n");
               parse_group_coin_output();
             case CHECK_SANITY_BEFORE_SIGN:
-              PRINTF("GROUP: CHECK_SANITY_BEFORE_SIGN\n");
               check_sanity_before_sign();
-              PRINTF("GROUP: CHECK_SANITY_BEFORE_SIGN-OUT\n");
               break;
             default:
               THROW(INVALID_STATE);
           }
-          CLOSE_TRY;
         }
       CATCH_OTHER(e) {
           if(e == NEED_NEXT_CHUNK) {
+            PRINTF("NEED_NEXT_CHUNK\n");
             os_memmove(txContext.saveBufferForNextChunk, txContext.bufferPointer, txContext.bytesChunkRemaining);
             txContext.saveBufferLength = txContext.bytesChunkRemaining;
           } else {
@@ -139,9 +134,8 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
             PRINTF("THROW\n");
             THROW(e);
           }
-        }
-      FINALLY {
       }
+      FINALLY {}
     }
   END_TRY;
 }

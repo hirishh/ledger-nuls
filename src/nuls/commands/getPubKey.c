@@ -22,8 +22,6 @@ static const bagl_element_t verify_address_ui[] = {
 static void createPublicKeyResponse() {
   initResponse();
 
-  deriveAccountAddress(&(reqContext.accountFrom));
-
   //ChainCode
   addToResponse(reqContext.accountFrom.chainCode, 32);
 

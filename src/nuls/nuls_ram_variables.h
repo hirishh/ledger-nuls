@@ -1,12 +1,14 @@
 #ifndef NULS_RAM_VARIABLES_H
 #define NULS_RAM_VARIABLES_H
 
-#include "nuls_context.h"
+#include "nuls_internals.h"
+#include "os.h"
+#include "cx.h"
 
-extern reqContext_t reqContext;
+extern request_context_t reqContext;
 extern transaction_context_t txContext;
 
-void nuls_tx_context_init();
-void nuls_req_context_init();
+extern cx_ecfp_public_key_t public_key;
+extern cx_ecfp_private_key_t private_key;
 
 #endif

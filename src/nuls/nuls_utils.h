@@ -2,10 +2,12 @@
 #define NULS_UTILS_H
 
 #include <stdbool.h>
-#include "os.h"
 #include <inttypes.h>
+#include "os.h"
 #include "../io.h"
-#include "secp256k1.h"
+#include "nuls_context.h"
+#include "nuls_internals.h"
+
 
 
 /**

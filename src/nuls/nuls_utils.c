@@ -77,21 +77,19 @@ void printAccountInfo(local_address_t *account) {
     PRINTF("account->path[%u] -> %u\n", i, account->path[i]^0x80000000);
   }
   PRINTF("account->chainId %d\n", account->chainId);
+  PRINTF("account->address %s\n", account->address);
 }
 
 uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
   uint32_t readCounter = 0;
 
-
   //PathLength
   account->pathLength = data[0];
   readCounter++;
 
-
   if(account->pathLength == 0) {
     return readCounter;
   }
-
 
   if(account->pathLength > MAX_BIP32_PATH) {
     THROW(INVALID_PARAMETER);
@@ -114,6 +112,8 @@ uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
 
   //Set chainId from account->path[1]
   account->chainId = (uint16_t) account->path[1]^0x80000000;
+
+  deriveAccountAddress(account);
 
   return readCounter;
 }
@@ -151,8 +151,6 @@ void setReqContextForSign(commPacket_t *packet) {
   packet->length = packet->length - headerBytesRead;
   PRINTF("packet->length %d\n", packet->length);
   PRINTF("packet-data %.*H\n", packet->length, &packet->data);
-  PRINTF("First byte packet %d\n", packet->data[0]);
-  PRINTF("Second byte packet %d\n", packet->data[1]);
 }
 
 void setReqContextForGetPubKey(commPacket_t *packet) {
@@ -164,12 +162,11 @@ void setReqContextForGetPubKey(commPacket_t *packet) {
 void deriveAccountAddress(local_address_t WIDE *account) {
 
   // Derive pubKey
-  nuls_private_derive_keypair(account->path, account->pathLength,
-                              &reqContext.privateKey, &reqContext.publicKey, account->chainCode);
+  nuls_private_derive_keypair(account->path, account->pathLength, account->chainCode);
   //Paranoid
-  os_memset(&reqContext.privateKey, 0, sizeof(reqContext.privateKey));
+  os_memset(&private_key, 0, sizeof(reqContext.privateKey));
   //Gen Compressed PubKey
-  nuls_compress_publicKey(&reqContext.publicKey, account->compressedPublicKey);
+  nuls_compress_publicKey(&public_key, account->compressedPublicKey);
   //Compressed PubKey -> Address
   nuls_public_key_to_encoded_base58(account->compressedPublicKey, account->chainId,
                                     account->type, account->address);
