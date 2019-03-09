@@ -2,6 +2,7 @@
 #define NULS_CONTEXT_H
 
 #include "nuls_constants.h"
+#include "stdbool.h"
 #include "os.h"
 #include "cx.h"
 
@@ -16,7 +17,8 @@ typedef struct local_address {
     uint8_t chainCode[32];
     uint16_t chainId;
     uint8_t type;
-    uint8_t address[33];
+    uint8_t address[23];
+    uint8_t addressBase58[33];
 } local_address_t;
 
 typedef struct request_context {
@@ -116,11 +118,17 @@ typedef struct transaction_context {
     /** Fields to Display  */
     unsigned char remark[REMARK_LENGTH];
     unsigned char remarkSize;
-    unsigned char fees[AMOUNT_LENGTH];
-    unsigned char outputAddress[ADDRESS_LENGTH];
-    unsigned char outputAmount[AMOUNT_LENGTH];
-    unsigned char changeAddress[ADDRESS_LENGTH];
+
+    uint8_t nOut;
+    unsigned char outputAddress[MAX_OUTPUT_TO_CHECK][ADDRESS_LENGTH];
+    unsigned char outputAmount[MAX_OUTPUT_TO_CHECK][AMOUNT_LENGTH];
+    uint8_t nOutCursor; //Used during UX
+
+    bool changeFound;
     unsigned char changeAmount[AMOUNT_LENGTH];
+
+    unsigned char fees[AMOUNT_LENGTH];
+    unsigned char amountSpent[AMOUNT_LENGTH];
 
 } transaction_context_t;
 

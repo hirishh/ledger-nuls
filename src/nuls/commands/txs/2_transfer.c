@@ -9,7 +9,7 @@
 static const bagl_element_t ui_send_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Send from", 0x01),
-  TITLE_ITEM("To", 0x02),
+  TITLE_ITEM("Output", 0x02),
   TITLE_ITEM("Remark", 0x03),
   TITLE_ITEM("Amount", 0x04),
   TITLE_ITEM("Fees", 0x05),
@@ -22,10 +22,18 @@ static const bagl_element_t ui_send_nano[] = {
   LINEBUFFER,
 };
 
+unsigned char outputCursor;
+
 static uint8_t stepProcessor_send(uint8_t step) {
-  if (step == 2 && txContext.remarkSize == 0) {
-    return 4;
+
+  if(step == 2) {
+    if(txContext.nOutCursor <= txContext.nOut)
+      return 2;
+
+    if(txContext.remarkSize == 0)
+      return 4;
   }
+
   return step + 1;
 }
 
@@ -35,21 +43,32 @@ static void uiProcessor_send(uint8_t step) {
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
-      os_memmove(lineBuffer, &reqContext.accountFrom.address, 32);
+      //Send From
+      os_memmove(lineBuffer, &reqContext.accountFrom.addressBase58, 32);
       lineBuffer[32] = '\0';
       break;
     case 2:
-      nuls_address_to_encoded_base58(txContext.outputAddress, addressToShow);
-      os_memmove(lineBuffer, addressToShow, 32);
+      // Output
+      nuls_address_to_encoded_base58(txContext.outputAddress[txContext.nOutCursor], addressToShow);
+      lineBuffer[0] = '#';
+      lineBuffer[1] = (char) txContext.nOutCursor;
+      lineBuffer[2] = ':';
+      lineBuffer[3] = ' ';
+      os_memmove(lineBuffer + 4, addressToShow, 32);
+      lineBuffer[32 + 4] = '\0';
+      txContext.nOutCursor++;
       break;
     case 3:
+      //Remark
       os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
       break;
     case 4:
-      amountTextSize = nuls_hex_amount_to_displayable(txContext.outputAmount, lineBuffer);
+      //Amount Spent (without change)
+      amountTextSize = nuls_hex_amount_to_displayable(txContext.amountSpent, lineBuffer);
       lineBuffer[amountTextSize] = '\0';
       break;
     case 5:
+      //Fees
       amountTextSize = nuls_hex_amount_to_displayable(txContext.fees, lineBuffer);
       lineBuffer[amountTextSize] = '\0';
       break;
@@ -112,6 +131,11 @@ void tx_finalize_2_transfer() {
 
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
     // L_DEBUG_APP(("Fee amount not consistent\n"));
+    THROW(INVALID_PARAMETER);
+  }
+
+  if (transaction_amount_sub_be(txContext.amountSpent, txContext.totalOutputAmount, txContext.changeAmount)) {
+    // L_DEBUG_APP(("AmountSpent amount not consistent\n"));
     THROW(INVALID_PARAMETER);
   }
 

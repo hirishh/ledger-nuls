@@ -34,24 +34,23 @@ uint8_t getxor(uint8_t *buffer, uint8_t length) {
 }
 
 unsigned short nuls_public_key_to_encoded_base58 (
-        uint8_t *compressedPublicKey,
+        uint8_t WIDE *compressedPublicKey,
         uint16_t chainId, uint8_t addressType,
-        uint8_t *out_address) {
-
-  unsigned char tmpBuffer[23];
-  tmpBuffer[0] = chainId;
-  tmpBuffer[1] = (chainId >> 8);
-  tmpBuffer[2] = addressType;
+        uint8_t *out_address,
+        uint8_t *out_addressBase58) {
+  out_address[0] = chainId;
+  out_address[1] = (chainId >> 8);
+  out_address[2] = addressType;
 
 //  PRINTF("RAW PubKey %.*H\n", 65, &reqContext.publicKey->W);
 //  PRINTF("COMPRESSED %.*H\n", 33, compressedPublicKey);
-  nuls_public_key_hash160(compressedPublicKey, 33, tmpBuffer + 3);
-  return nuls_address_to_encoded_base58(tmpBuffer, out_address);
+  nuls_public_key_hash160(compressedPublicKey, 33, out_address + 3);
+  return nuls_address_to_encoded_base58(out_address, out_addressBase58);
 }
 
 unsigned short nuls_address_to_encoded_base58(
-        uint8_t *nulsRipemid160, //chainId + addresstype + ripemid160
-        uint8_t *out_address) {
+        uint8_t WIDE *nulsRipemid160, //chainId + addresstype + ripemid160
+        uint8_t *out_addressBase58) {
   unsigned char tmpBuffer[24];
   os_memmove(tmpBuffer, nulsRipemid160, 23);
   //  PRINTF("tmpbuffer0,1,2 %.*H\n", 3, tmpBuffer);
@@ -59,11 +58,25 @@ unsigned short nuls_address_to_encoded_base58(
   tmpBuffer[23] = getxor(tmpBuffer, 23);
   //  PRINTF("XOR %d\n", tmpBuffer[23]);
   size_t outputLen = 32;
-  if (nuls_encode_base58(tmpBuffer, 24, out_address, &outputLen) < 0) {
+  if (nuls_encode_base58(tmpBuffer, 24, out_addressBase58, &outputLen) < 0) {
     THROW(EXCEPTION);
   }
   //  PRINTF("Base58 %s\n", out_address);
   return outputLen;
+}
+
+void deriveAccountAddress(local_address_t *account) {
+
+  // Derive pubKey
+  nuls_private_derive_keypair(account->path, account->pathLength, account->chainCode);
+  //Paranoid
+  os_memset(&private_key, 0, sizeof(private_key));
+  //Gen Compressed PubKey
+  nuls_compress_publicKey(&public_key, account->compressedPublicKey);
+  //Compressed PubKey -> Address
+  nuls_public_key_to_encoded_base58(account->compressedPublicKey, account->chainId,
+                                    account->type, account->address, account->addressBase58);
+  account->addressBase58[32] = '\0';
 }
 
 
@@ -151,20 +164,4 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
 uint32_t setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.showConfirmation = packet->data[0];
   return extractAccountInfo(packet->data + 1, &reqContext.accountFrom);
-}
-
-
-void deriveAccountAddress(local_address_t *account) {
-
-  // Derive pubKey
-  nuls_private_derive_keypair(account->path, account->pathLength, account->chainCode);
-  //Paranoid
-  os_memset(&private_key, 0, sizeof(private_key));
-  //Gen Compressed PubKey
-  nuls_compress_publicKey(&public_key, account->compressedPublicKey);
-
-  //Compressed PubKey -> Address
-  nuls_public_key_to_encoded_base58(account->compressedPublicKey, account->chainId,
-                                    account->type, account->address);
-  account->address[32] = '\0';
 }

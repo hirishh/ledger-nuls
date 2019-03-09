@@ -6,9 +6,12 @@
 #define MAX_BIP32_PATH 10
 #define MAX_BIP32_PATH_LENGTH (4 * MAX_BIP32_PATH) + 1
 
+#define MAX_OUTPUT_TO_CHECK 10
+
 #define REMARK_LENGTH 30
 #define HASH_LENGTH 34
 #define ADDRESS_LENGTH 23 // chainid (2) + addressType (1) + RIPEMID160 (20)
+#define BASE58_ADDRESS_LENGTH 33 // 32 + '/0'
 #define AMOUNT_LENGTH 8
 #define LOCKTIME_LENGTH 6
 #define DIGEST_LENGTH 32

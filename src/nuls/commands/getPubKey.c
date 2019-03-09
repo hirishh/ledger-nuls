@@ -24,7 +24,7 @@ static void createPublicKeyResponse() {
   addToResponse(reqContext.accountFrom.compressedPublicKey, 33);
 
   //Base58Address
-  addToResponse(reqContext.accountFrom.address, 32);
+  addToResponse(reqContext.accountFrom.addressBase58, 32);
 }
 
 unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -50,12 +50,15 @@ unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int but
 
 static void ui_address(void) {
   os_memset(lineBuffer, 0, 50);
-  os_memmove(lineBuffer, &reqContext.accountFrom.address, 32);
+  os_memmove(lineBuffer, &reqContext.accountFrom.addressBase58, 32);
   lineBuffer[32] = '\0';
   UX_DISPLAY(verify_address_ui, NULL);
 }
 
 void handleGetPublicKey(volatile unsigned int *flags, commPacket_t *packet) {
+  //reset contexts
+  os_memset(&reqContext, 0, sizeof(reqContext));
+  os_memset(&txContext, 0, sizeof(txContext));
   setReqContextForGetPubKey(packet); //address is derived during extractBip32Data()
 
   if (reqContext.showConfirmation == true) { // show address?

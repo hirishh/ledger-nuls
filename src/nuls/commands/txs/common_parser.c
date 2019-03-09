@@ -16,36 +16,31 @@ void parse_group_common() {
       // Reset transaction state
       txContext.remainingInputsOutputs = 0;
       txContext.currentInputOutput = 0;
-      //Done, start with the next field
-      txContext.tx_parsing_state = FIELD_TYPE;
       //no break is intentional
-
     case FIELD_TYPE:
+      txContext.tx_parsing_state = FIELD_TYPE;
       //PRINTF("-- FIELD_TYPE\n");
       //already parsed..
       is_available_to_parse(2);
       transaction_offset_increase(2);
-      txContext.tx_parsing_state = FIELD_TIME;
       //no break is intentional
-
     case FIELD_TIME:
+      txContext.tx_parsing_state = FIELD_TIME;
       //PRINTF("-- FIELD_TIME\n");
       is_available_to_parse(6);
       transaction_offset_increase(6);
-      txContext.tx_parsing_state = FIELD_REMARK_LENGTH;
       //no break is intentional
-
     case FIELD_REMARK_LENGTH:
+      txContext.tx_parsing_state = FIELD_REMARK_LENGTH;
       //PRINTF("-- FIELD_REMARK_LENGTH\n");
       remarkVarInt = transaction_get_varint();
       if(remarkVarInt > REMARK_LENGTH) {
         THROW(INVALID_PARAMETER);
       }
       txContext.remarkSize = (unsigned char) remarkVarInt;
-      txContext.tx_parsing_state = FIELD_REMARK;
       //no break is intentional
-
     case FIELD_REMARK:
+      txContext.tx_parsing_state = FIELD_REMARK;
       //PRINTF("-- FIELD_REMARK\n");
       if (txContext.remarkSize != 0) {
         is_available_to_parse(txContext.remarkSize);
@@ -79,24 +74,21 @@ void parse_group_coin_input() {
         // Read how many inputs
         txContext.remainingInputsOutputs = transaction_get_varint(); //throw if it can't.
         txContext.currentInputOutput = 0;
-        if(txContext.remainingInputsOutputs > 0) {
-          txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH; //Read input data
-        } else {
+        if(txContext.remainingInputsOutputs == 0) {
           //No input (???), let's check outputs
           txContext.tx_parsing_group = COIN_OUTPUT;
           txContext.tx_parsing_state = BEGINNING;
           break; //exit from this switch
         }
-
       case COIN_OWNER_DATA_LENGTH:
+        txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
         //PRINTF("-- COIN_OWNER_DATA_LENGTH\n");
         //PRINTF("remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
         //PRINTF("currentInputOutput: %d\n", txContext.currentInputOutput);
         txContext.currentInputOutputOwnerLength = transaction_get_varint();
         //PRINTF("currentInputOutputOwnerLength: %d\n", txContext.currentInputOutputOwnerLength);
-        txContext.tx_parsing_state = COIN_DATA;
-
       case COIN_DATA:
+        txContext.tx_parsing_state = COIN_DATA;
         //PRINTF("-- COIN_DATA\n");
         //Check if we can parse whole input (owner + amount + locktime)
         is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
@@ -148,9 +140,6 @@ void parse_group_coin_output() {
     THROW(INVALID_STATE);
   }
 
-  unsigned char address[ADDRESS_LENGTH];
-  unsigned char amount[AMOUNT_LENGTH];
-
   do {
     switch(txContext.tx_parsing_state) {
 
@@ -158,18 +147,23 @@ void parse_group_coin_output() {
         //PRINTF("-- BEGINNING\n");
         // Read how many outputs
         txContext.remainingInputsOutputs = transaction_get_varint(); //throw if it can't.
-        txContext.currentInputOutput = 0;
 
-        if(txContext.remainingInputsOutputs > 0) {
-          txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH; //Read input data
-        } else {
-          //No input (???), let's check outputs
-          txContext.tx_parsing_group = COIN_OUTPUT;
+        if(txContext.remainingInputsOutputs > MAX_OUTPUT_TO_CHECK) {
+          THROW(INVALID_PARAMETER);
+        }
+
+        txContext.currentInputOutput = 0;
+        txContext.changeFound = false;
+        txContext.nOut = 0;
+        if(txContext.remainingInputsOutputs == 0) {
+          //No output (???), let's check outputs
+          txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
           txContext.tx_parsing_state = BEGINNING;
           break; //exit from this switch
         }
 
       case COIN_OWNER_DATA_LENGTH:
+        txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
         //PRINTF("-- COIN_OWNER_DATA_LENGTH\n");
         //PRINTF("-- remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
         //PRINTF("-- currentInputOutput: %d\n", txContext.currentInputOutput);
@@ -180,49 +174,56 @@ void parse_group_coin_output() {
           //TODO At the moment we support only transfer to address. rawScript is not implemented
           THROW(NOT_SUPPORTED);
         }
-        txContext.tx_parsing_state = COIN_DATA;
 
       case COIN_DATA:
+        txContext.tx_parsing_state = COIN_DATA;
         //PRINTF("-- COIN_DATA\n");
         //Check if we can parse whole input (owner + amount + locktime)
         is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
         //now we have whole output
         //PRINTF("owner: %.*H\n", txContext.currentInputOutputOwnerLength, txContext.bufferPointer);
-        //TODO we need to change it in a second moment
-        //if currentInputOutput == 0 -> addressTo (temp solution)
-        //if currentInputOutput == 1 -> change address (temp solution)
-        os_memmove(address, txContext.bufferPointer, ADDRESS_LENGTH);
-        //PRINTF("Address:  %s\n", address);
+
+        //Save the address as "toShow"
+        os_memmove(txContext.outputAddress[txContext.nOut], txContext.bufferPointer, ADDRESS_LENGTH);
+        //If address is not a P2PKH, throw an error since it's not yet supported
+        if(txContext.outputAddress[txContext.nOut][2] != 0x01) { //P2PKH //TODO support P2SH
+          THROW(INVALID_PARAMETER);
+        }
         transaction_offset_increase(ADDRESS_LENGTH);
-        nuls_swap_bytes(amount, txContext.bufferPointer, AMOUNT_LENGTH);
-        //PRINTF("amount: %.*H\n", 8, amount);
+        //Amount
+        nuls_swap_bytes(txContext.outputAmount[txContext.nOut], txContext.bufferPointer, AMOUNT_LENGTH);
         transaction_offset_increase(AMOUNT_LENGTH);
-
-        //If address is a P2SH, throw an error since it's not yet supported
-        //TODO support P2SH
-        if(address[2] != 0x01) { //P2PKH
-          THROW(INVALID_PARAMETER);
-        }
-
-        if (transaction_amount_add_be(txContext.totalOutputAmount, txContext.totalOutputAmount, amount)) {
-          // L_DEBUG_APP(("Output amount Overflow\n"));
-          THROW(INVALID_PARAMETER);
-        }
-
-        if(txContext.currentInputOutput == 0) {
-          //AddressTO
-          os_memmove(txContext.outputAddress, address, ADDRESS_LENGTH);
-          os_memmove(txContext.outputAmount, amount, AMOUNT_LENGTH);
-        } else if (txContext.currentInputOutput == 1) {
-          os_memmove(txContext.changeAddress, address, ADDRESS_LENGTH);
-          os_memmove(txContext.changeAmount, amount, AMOUNT_LENGTH);
-        } else {
-          THROW(NOT_SUPPORTED);
-        }
-
-        //locktime
-        //PRINTF("locktime\n");
+        //Locktime
         transaction_offset_increase(LOCKTIME_LENGTH);
+
+        //Add to totalOutputAmount
+        if(transaction_amount_add_be(txContext.totalOutputAmount, txContext.totalOutputAmount, txContext.outputAmount[txContext.nOut])) {
+          THROW(INVALID_PARAMETER);
+        }
+
+        txContext.nOut++;
+
+        //PRINTF("output #%d\n", txContext.nOut);
+        //PRINTF("Address:  %.*H\n", ADDRESS_LENGTH, txContext.outputAddress[txContext.nOut]);
+        //PRINTF("amount: %.*H\n", AMOUNT_LENGTH, txContext.outputAmount[txContext.nOut]);
+
+        //Do check about changeAddress
+        //If is a change address -> remove from "toshow" and do "only-one" check
+        if(reqContext.accountChange.pathLength > 0) { // -> user specified accountChange in input
+
+          if(os_memcmp(txContext.outputAddress[txContext.nOut], reqContext.accountChange.address, 23)) {
+            //Is the change output. Check if we have already parsed one
+            if(txContext.changeFound) {
+              THROW(INVALID_PARAMETER);
+            }
+            //PRINTF("It's a valid change address!\n");
+            txContext.changeFound = true;
+            //Save to changeAmount
+            os_memmove(txContext.changeAmount, txContext.outputAmount[txContext.nOut], AMOUNT_LENGTH);
+            //Remove from "toShow"
+            txContext.nOut--;
+          }
+        }
 
         //update indexes
         txContext.remainingInputsOutputs--;
