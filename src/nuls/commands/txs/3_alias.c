@@ -6,7 +6,7 @@
 /**
  * Sign with address
  */
-static const bagl_element_t ui_2_transfer_nano[] = {
+static const bagl_element_t ui_3_alias_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Send from", 0x01),
   TITLE_ITEM("Output", 0x02),
@@ -22,7 +22,8 @@ static const bagl_element_t ui_2_transfer_nano[] = {
   LINEBUFFER,
 };
 
-static uint8_t stepProcessor_2_transfer(uint8_t step) {
+
+static uint8_t stepProcessor_3_alias(uint8_t step) {
 
   if(step == 2) {
     if(txContext.nOutCursor < txContext.nOut)
@@ -35,7 +36,7 @@ static uint8_t stepProcessor_2_transfer(uint8_t step) {
   return step + 1;
 }
 
-static void uiProcessor_2_transfer(uint8_t step) {
+static void uiProcessor_3_alias(uint8_t step) {
   uint8_t addressToShow[32] = {0};
   uint8_t outputBuilder[50] = {0};
   unsigned short amountTextSize;
@@ -77,7 +78,7 @@ static void uiProcessor_2_transfer(uint8_t step) {
   }
 }
 
-void tx_parse_specific_2_transfer() {
+void tx_parse_specific_3_alias() {
 
   /* TX Structure:
    *
@@ -89,6 +90,8 @@ void tx_parse_specific_2_transfer() {
    *
    * TX_SPECIFIC (handled here)
    * - placeholder -> 4 bytes (0xFFFFFFFF)
+   * - len:address
+   * - len:alias
    *
    * COIN_INPUT
    * - owner (hash + index)
@@ -116,6 +119,30 @@ void tx_parse_specific_2_transfer() {
         THROW(INVALID_PARAMETER);
       transaction_offset_increase(4);
 
+    case 3_ALIAS_ADDRESS_LENGTH:
+      txContext.tx_parsing_state = 3_ALIAS_ADDRESS_LENGTH;
+      PRINTF("-- 3_ALIAS_ADDRESS_LENGTH\n");
+      txContext.fieldLength = transaction_get_varint();
+      if(txContext.fieldLength != ADDRESS_LENGTH) {
+        //TODO Can be also something else?
+        THROW(NOT_SUPPORTED);
+      }
+
+    case 3_ALIAS_ADDRESS:
+      txContext.tx_parsing_state = 3_ALIAS_ADDRESS;
+      PRINTF("-- 3_ALIAS_ADDRESS\n");
+      is_available_to_parse(txContext.fieldLength);
+      PRINTF("address: %.*H\n", txContext.fieldLength, txContext.bufferPointer);
+      //Save the address
+      os_memmove(txContext.tx_specific_fields.alias.address, txContext.bufferPointer, ADDRESS_LENGTH);
+
+
+    case 3_ALIAS_ALIAS_LENGTH:
+      txContext.tx_parsing_state = 3_ALIAS_ALIAS_LENGTH;
+    case 3_ALIAS_ALIAS:
+      txContext.tx_parsing_state = 3_ALIAS_ALIAS;
+
+
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
       txContext.tx_parsing_state = BEGINNING;
@@ -126,7 +153,7 @@ void tx_parse_specific_2_transfer() {
   }
 }
 
-void tx_finalize_2_transfer() {
+void tx_finalize_3_alias() {
 
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
     // L_DEBUG_APP(("Fee amount not consistent\n"));
@@ -144,9 +171,9 @@ void tx_finalize_2_transfer() {
   PRINTF("finalize. Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
   PRINTF("finalize. amountSpent: %.*H\n", AMOUNT_LENGTH, txContext.amountSpent);
 
-  ux.elements = ui_2_transfer_nano;
+  ux.elements = ui_3_alias_nano;
   ux.elements_count = 13;
   totalSteps = 5;
-  step_processor = stepProcessor_2_transfer;
-  ui_processor = uiProcessor_2_transfer;
+  step_processor = stepProcessor_3_alias;
+  ui_processor = uiProcessor_3_alias;
 }
