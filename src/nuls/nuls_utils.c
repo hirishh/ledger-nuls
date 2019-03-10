@@ -90,7 +90,8 @@ void printAccountInfo(local_address_t *account) {
     PRINTF("account->path[%u] -> %u\n", i, account->path[i]^0x80000000);
   }
   PRINTF("account->chainId %d\n", account->chainId);
-  PRINTF("account->address %s\n", account->address);
+  PRINTF("account->address %.*H\n", 23, account->address);
+  PRINTF("account->addressBase58 %s\n", account->addressBase58);
 }
 
 uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
@@ -157,7 +158,7 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
   }
 
   PRINTF("packet->length %d\n", packet->length - headerBytesRead);
-  PRINTF("packet-data %.*H\n", packet->length - headerBytesRead, &packet->data + headerBytesRead);
+  //PRINTF("packet-data %.*H\n", packet->length - headerBytesRead, &packet->data + headerBytesRead);
   return headerBytesRead;
 }
 

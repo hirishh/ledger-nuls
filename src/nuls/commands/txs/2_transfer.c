@@ -27,7 +27,7 @@ unsigned char outputCursor;
 static uint8_t stepProcessor_send(uint8_t step) {
 
   if(step == 2) {
-    if(txContext.nOutCursor <= txContext.nOut)
+    if(txContext.nOutCursor < txContext.nOut)
       return 2;
 
     if(txContext.remarkSize == 0)
@@ -38,7 +38,8 @@ static uint8_t stepProcessor_send(uint8_t step) {
 }
 
 static void uiProcessor_send(uint8_t step) {
-  uint8_t addressToShow[32];
+  uint8_t addressToShow[32] = {0};
+  uint8_t outputBuilder[50] = {0};
   unsigned short amountTextSize;
   os_memset(lineBuffer, 0, 50);
   switch (step) {
@@ -49,14 +50,15 @@ static void uiProcessor_send(uint8_t step) {
       break;
     case 2:
       // Output
-      nuls_address_to_encoded_base58(txContext.outputAddress[txContext.nOutCursor], addressToShow);
-      lineBuffer[0] = '#';
-      lineBuffer[1] = (char) txContext.nOutCursor;
-      lineBuffer[2] = ':';
-      lineBuffer[3] = ' ';
-      os_memmove(lineBuffer + 4, addressToShow, 32);
-      lineBuffer[32 + 4] = '\0';
+      outputBuilder[0] = '#';
+      amountTextSize = nuls_int_to_string(txContext.nOutCursor, outputBuilder + 1);
+      outputBuilder[1 + amountTextSize] = ':';
+      outputBuilder[1 + amountTextSize + 1] = ' ';
+      nuls_address_to_encoded_base58(txContext.outputAddress[txContext.nOutCursor],
+              outputBuilder + 1 + amountTextSize + 2);
+      outputBuilder[32 + 3 + amountTextSize] = '\0';
       txContext.nOutCursor++;
+      os_memmove(lineBuffer, outputBuilder, 50);
       break;
     case 3:
       //Remark
@@ -104,15 +106,15 @@ void tx_parse_specific_2_transfer() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      //PRINTF("-- BEGINNING\n");
+      PRINTF("-- BEGINNING\n");
       // Only PLACEHOLDER for this TX type
       txContext.tx_parsing_state = PLACEHOLDER;
 
     case PLACEHOLDER:
-      //PRINTF("-- PLACEHOLDER\n");
+      PRINTF("-- PLACEHOLDER\n");
       is_available_to_parse(4);
       uint32_t placeholder = nuls_read_u32(txContext.bufferPointer, 1, 0);
-      //PRINTF("placeholder %.*H\n", 4, &placeholder);
+      PRINTF("placeholder %.*H\n", 4, &placeholder);
       if(placeholder != 0xFFFFFFFF)
         THROW(INVALID_PARAMETER);
       transaction_offset_increase(4);
@@ -134,10 +136,16 @@ void tx_finalize_2_transfer() {
     THROW(INVALID_PARAMETER);
   }
 
-  if (transaction_amount_sub_be(txContext.amountSpent, txContext.totalOutputAmount, txContext.changeAmount)) {
-    // L_DEBUG_APP(("AmountSpent amount not consistent\n"));
-    THROW(INVALID_PARAMETER);
+  os_memmove(txContext.amountSpent, txContext.totalOutputAmount, AMOUNT_LENGTH);
+  if(txContext.changeFound) {
+    if (transaction_amount_sub_be(txContext.amountSpent, txContext.amountSpent, txContext.changeAmount)) {
+      // L_DEBUG_APP(("AmountSpent amount not consistent\n"));
+      THROW(INVALID_PARAMETER);
+    }
   }
+
+  PRINTF("finalize. Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
+  PRINTF("finalize. amountSpent: %.*H\n", AMOUNT_LENGTH, txContext.amountSpent);
 
   ux.elements = ui_send_nano;
   ux.elements_count = 13;

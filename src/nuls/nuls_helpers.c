@@ -69,3 +69,26 @@ void nuls_swap_bytes(unsigned char *target, unsigned char *source, unsigned char
     target[i] = source[size - 1 - i];
   }
 }
+
+unsigned char nuls_int_to_string(unsigned long int amount, char *out) {
+  unsigned char i = 0;
+  if (amount == 0) {
+    out[0] = '0';
+    i = 1;
+  } else {
+    unsigned long int part = amount;
+    while(part > 0) {
+      out[i++] = (unsigned char) (part % 10 + '0');
+      part /= 10;
+    }
+  }
+  out[i] = '\0';
+  unsigned char j = 0;
+  for (j=0; j<i/2; j++) {
+    char swap = out[j];
+    out[j] = out[i-1-j];
+    out[i-1-j] = swap;
+  }
+
+  return i;
+}

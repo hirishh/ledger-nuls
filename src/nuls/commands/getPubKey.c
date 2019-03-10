@@ -25,6 +25,9 @@ static void createPublicKeyResponse() {
 
   //Base58Address
   addToResponse(reqContext.accountFrom.addressBase58, 32);
+
+  //Address
+  addToResponse(reqContext.accountFrom.address, 23);
 }
 
 unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
