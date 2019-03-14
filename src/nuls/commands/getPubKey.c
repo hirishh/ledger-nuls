@@ -25,9 +25,6 @@ static void createPublicKeyResponse() {
 
   //Base58Address
   addToResponse(reqContext.accountFrom.addressBase58, 32);
-
-  //Address
-  addToResponse(reqContext.accountFrom.address, 23);
 }
 
 unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
@@ -62,7 +59,7 @@ void handleGetPublicKey(volatile unsigned int *flags, commPacket_t *packet) {
   //reset contexts
   os_memset(&reqContext, 0, sizeof(reqContext));
   os_memset(&txContext, 0, sizeof(txContext));
-  setReqContextForGetPubKey(packet); //address is derived during extractBip32Data()
+  setReqContextForGetPubKey(packet); //address is derived there
 
   if (reqContext.showConfirmation == true) { // show address?
     // Show on ledger

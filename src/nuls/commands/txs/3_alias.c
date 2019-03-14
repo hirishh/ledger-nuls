@@ -10,10 +10,10 @@ static const bagl_element_t ui_3_alias_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Alias for address", 0x01),
   TITLE_ITEM("Alias", 0x02),
-  TITLE_ITEM("Fees", 0x05),
+  TITLE_ITEM("Fees", 0x03),
   ICON_ARROW_RIGHT(0x01),
   ICON_ARROW_RIGHT(0x02),
-  ICON_CHECK(0x05),
+  ICON_CHECK(0x03),
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
@@ -29,8 +29,8 @@ static void uiProcessor_3_alias(uint8_t step) {
   switch (step) {
     case 1:
       //Alias for address
-      os_memmove(lineBuffer, &reqContext.accountFrom.addressBase58, ADDRESS_LENGTH);
-      lineBuffer[ADDRESS_LENGTH] = '\0';
+      os_memmove(lineBuffer, &reqContext.accountFrom.addressBase58, BASE58_ADDRESS_LENGTH);
+      lineBuffer[BASE58_ADDRESS_LENGTH] = '\0';
       break;
     case 2:
       // Alias
@@ -113,6 +113,8 @@ void tx_parse_specific_3_alias() {
       PRINTF("alias: %.*H\n", txContext.tx_specific_fields.alias.aliasSize, txContext.bufferPointer);
       //Save the alias
       os_memmove(txContext.tx_specific_fields.alias.alias, txContext.bufferPointer, txContext.tx_specific_fields.alias.aliasSize);
+      txContext.tx_specific_fields.alias.alias[txContext.tx_specific_fields.alias.aliasSize] = '\0';
+      PRINTF("aliasStr: %s\n", txContext.tx_specific_fields.alias.alias);
       transaction_offset_increase(txContext.tx_specific_fields.alias.aliasSize);
 
       //It's time for CoinData
@@ -126,6 +128,7 @@ void tx_parse_specific_3_alias() {
 }
 
 void tx_finalize_3_alias() {
+  PRINTF("tx_finalize_3_alias\n");
 
   //Throw if:
 
@@ -135,11 +138,15 @@ void tx_finalize_3_alias() {
     THROW(INVALID_PARAMETER);
   }
 
+  PRINTF("tx_finalize_3_alias - A\n");
+
   // - addresFrom is different from alias.address
   if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_specific_fields.alias.address, ADDRESS_LENGTH) != 0) {
     // PRINTF(("Alias address is diffrent from account provided in input!\n"));
     THROW(INVALID_PARAMETER);
   }
+
+  PRINTF("tx_finalize_3_alias - B\n");
 
   /* Not Really necessary
   // - changeFound is parsed correctly but it's not equal to alias.address
@@ -150,15 +157,28 @@ void tx_finalize_3_alias() {
   }
   */
 
+  PRINTF("tx_finalize_3_alias - nOut %d\n", txContext.nOut);
+  PRINTF("tx_finalize_3_alias - txContext.outputAddress %.*H\n", ADDRESS_LENGTH, txContext.outputAddress[0]);
+  PRINTF("tx_finalize_3_alias - BLACK_HOLE_ADDRESS %.*H\n", ADDRESS_LENGTH, BLACK_HOLE_ADDRESS);
+  PRINTF("tx_finalize_3_alias - txContext.outputAmount %.*H\n", AMOUNT_LENGTH, txContext.outputAmount[0]);
+  PRINTF("tx_finalize_3_alias - BLACK_HOLE_ALIAS_AMOUNT %.*H\n", AMOUNT_LENGTH, BLACK_HOLE_ALIAS_AMOUNT);
+  PRINTF("tx_finalize_3_alias - nuls_secure_memcmp address %d\n", nuls_secure_memcmp(txContext.outputAddress[0], BLACK_HOLE_ADDRESS, ADDRESS_LENGTH));
+  PRINTF("tx_finalize_3_alias - nuls_secure_memcmp amount %d\n", nuls_secure_memcmp(txContext.outputAmount[0], BLACK_HOLE_ALIAS_AMOUNT, AMOUNT_LENGTH));
+
   // - should be only 1 output (excluding the change one) and it's a blackhole output with specific amount of 1 Nuls
+  if(txContext.nOut != 1) {
+    // PRINTF(("Number of output is wrong. Only 1 normal output and must be a black hole)\n"));
+    THROW(INVALID_PARAMETER);
+  }
   if(
-      txContext.nOut != 1 ||
       (txContext.nOut == 1 && nuls_secure_memcmp(txContext.outputAddress[0], BLACK_HOLE_ADDRESS, ADDRESS_LENGTH) != 0) ||
       (txContext.nOut == 1 && nuls_secure_memcmp(txContext.outputAmount[0], BLACK_HOLE_ALIAS_AMOUNT, AMOUNT_LENGTH) != 0)
     ) {
     // PRINTF(("Blackhole output is not corret (wrong address or amount)\n"));
     THROW(INVALID_PARAMETER);
   }
+
+  PRINTF("tx_finalize_3_alias - C\n");
 
   //Calculate fees (input - output)
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
@@ -170,6 +190,8 @@ void tx_finalize_3_alias() {
     // L_DEBUG_APP(("Fee amount not consistent - blackhole\n"));
     THROW(INVALID_PARAMETER);
   }
+
+  PRINTF("tx_finalize_3_alias - D\n");
 
   PRINTF("finalize. Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
 

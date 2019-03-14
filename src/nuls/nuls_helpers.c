@@ -72,7 +72,7 @@ unsigned long int nuls_read_u32(unsigned char *buffer, unsigned char be, unsigne
   return result;
 }
 
-unsigned char nuls_secure_memcmp(const void WIDE *buf1, const void WIDE *buf2, unsigned short length) {
+unsigned char nuls_secure_memcmp(void WIDE *buf1, void WIDE *buf2, unsigned short length) {
   unsigned char error = 0;
   while (length--) {
     error |= ((unsigned char WIDE *)buf1)[length] ^
