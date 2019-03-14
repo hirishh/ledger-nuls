@@ -62,6 +62,9 @@ enum transaction_parsing_state_e {
     _3_ALIAS_ADDRESS = 0x07,
     _3_ALIAS_ALIAS_LENGTH = 0x08,
     _3_ALIAS_ALIAS = 0x09,
+    _5_JOIN_CONS_DEPOSIT = 0x10,
+    _5_JOIN_CONS_ADDRESS = 0x11,
+    _5_JOIN_CONS_AGENTHASH = 0x12,
     //TODO for other TXs
     /** COIN: Input & Output */
     COIN_OWNER_DATA_LENGTH = 0x20,
@@ -79,14 +82,13 @@ typedef struct tx_type_specific_3_alias {
 
 typedef struct tx_type_specific_5_join_consensus {
     unsigned char deposit[AMOUNT_LENGTH];
-    unsigned char agentAddress[ADDRESS_LENGTH];
-    unsigned char packingAddress[ADDRESS_LENGTH];
-    unsigned char rewardAddress[ADDRESS_LENGTH];
-
+    unsigned char address[ADDRESS_LENGTH];
+    unsigned char agentHash[HASH_LENGTH];
 } tx_type_specific_5_join_consensus_t;
 
 typedef union tx_specific_fields {
     tx_type_specific_3_alias_t alias;
+    tx_type_specific_5_join_consensus_t join_consensus;
 } tx_specific_fields_t;
 
 typedef struct transaction_context {

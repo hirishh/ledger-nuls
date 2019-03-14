@@ -142,7 +142,7 @@ void tx_finalize_3_alias() {
 
   // - addresFrom is different from alias.address
   if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_specific_fields.alias.address, ADDRESS_LENGTH) != 0) {
-    // PRINTF(("Alias address is diffrent from account provided in input!\n"));
+    // PRINTF(("Alias address is different from account provided in input!\n"));
     THROW(INVALID_PARAMETER);
   }
 

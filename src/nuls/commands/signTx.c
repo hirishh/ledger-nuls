@@ -5,22 +5,23 @@
 #include "txs/common_parser.h"
 #include "txs/2_transfer.h"
 #include "txs/3_alias.h"
+#include "txs/5_join_consensus.h"
 
 
-#define TX_TYPE_CONSENSUS_REWARD 1
-#define TX_TYPE_TRANSFER_TX 2
-#define TX_TYPE_SET_ALIAS 3
-#define TX_TYPE_REGISTER_CONSENSUS_NODE 4
-#define TX_TYPE_JOIN_CONSENSUS 5
-#define TX_TYPE_CANCEL_CONSENSUS 6
-#define TX_TYPE_YELLOW_CARD 7
-#define TX_TYPE_RED_CARD 8
-#define TX_TYPE_UNREGISTER_CONSENSUS_NODE 9
-#define TX_TYPE_BUSINESS_DATA 10
-#define TX_TYPE_CREATE_CONTRACT 100
-#define TX_TYPE_CALL_CONTRACT 101
-#define TX_TYPE_DELETE_CONTRACT 102
-#define TX_TYPE_TRANSFER_CONTRACT 103
+#define TX_TYPE_1_CONSENSUS_REWARD 1
+#define TX_TYPE_2_TRANSFER_TX 2
+#define TX_TYPE_3_SET_ALIAS 3
+#define TX_TYPE_4_REGISTER_CONSENSUS_NODE 4
+#define TX_TYPE_5_JOIN_CONSENSUS 5
+#define TX_TYPE_6_CANCEL_CONSENSUS 6
+#define TX_TYPE_7_YELLOW_CARD 7
+#define TX_TYPE_8_RED_CARD 8
+#define TX_TYPE_9_UNREGISTER_CONSENSUS_NODE 9
+#define TX_TYPE_10_BUSINESS_DATA 10
+#define TX_TYPE_11_CREATE_CONTRACT 100
+#define TX_TYPE_12_CALL_CONTRACT 101
+#define TX_TYPE_13_DELETE_CONTRACT 102
+#define TX_TYPE_14_TRANSFER_CONTRACT 103
 
 typedef void (*tx_parse_fn)();
 typedef void (*tx_end_fn)();
@@ -73,13 +74,17 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     txContext.totalTxBytes = reqContext.signableContentLength;
 
     switch (txContext.type) {
-      case TX_TYPE_TRANSFER_TX:
+      case TX_TYPE_2_TRANSFER_TX:
         tx_parse = tx_parse_specific_2_transfer;
         tx_end = tx_finalize_2_transfer;
         break;
-      case TX_TYPE_SET_ALIAS:
+      case TX_TYPE_3_SET_ALIAS:
         tx_parse = tx_parse_specific_3_alias;
         tx_end = tx_finalize_3_alias;
+        break;
+      case TX_TYPE_5_JOIN_CONSENSUS:
+        tx_parse = tx_parse_specific_5_join_consensus;
+        tx_end = tx_finalize_5_join_consensus;
         break;
       default:
         PRINTF("TYPE not supported\n");

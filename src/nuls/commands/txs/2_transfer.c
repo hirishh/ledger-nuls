@@ -37,7 +37,6 @@ static uint8_t stepProcessor_2_transfer(uint8_t step) {
 
 static void uiProcessor_2_transfer(uint8_t step) {
   uint8_t addressToShow[32] = {0};
-  uint8_t outputBuilder[50] = {0};
   unsigned short amountTextSize;
   os_memset(lineBuffer, 0, 50);
   switch (step) {
@@ -48,19 +47,19 @@ static void uiProcessor_2_transfer(uint8_t step) {
       break;
     case 2:
       // Output
-      outputBuilder[0] = '#';
-      amountTextSize = nuls_int_to_string(txContext.nOutCursor, outputBuilder + 1);
-      outputBuilder[1 + amountTextSize] = ':';
-      outputBuilder[1 + amountTextSize + 1] = ' ';
-      nuls_address_to_encoded_base58(txContext.outputAddress[txContext.nOutCursor],
-              outputBuilder + 1 + amountTextSize + 2);
-      outputBuilder[32 + 3 + amountTextSize] = '\0';
+      lineBuffer[0] = '#';
+      amountTextSize = nuls_int_to_string(txContext.nOutCursor, lineBuffer + 1);
+      lineBuffer[1 + amountTextSize] = ':';
+      lineBuffer[1 + amountTextSize + 1] = ' ';
+      nuls_address_to_encoded_base58(txContext.outputAddress[txContext.nOutCursor], addressToShow);
+      os_memmove(lineBuffer + 1 + amountTextSize + 2, addressToShow, BASE58_ADDRESS_LENGTH);
+      lineBuffer[BASE58_ADDRESS_LENGTH + 3 + amountTextSize] = '\0';
       txContext.nOutCursor++;
-      os_memmove(lineBuffer, outputBuilder, 50);
       break;
     case 3:
       //Remark
       os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
+      lineBuffer[txContext.remarkSize] = '\0';
       break;
     case 4:
       //Amount Spent (without change)
