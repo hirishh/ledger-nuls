@@ -21,18 +21,20 @@ void touch_deny() {
 }
 
 void touch_approve() {
-  uint8_t signature[255];
-  os_memset(signature, 0, 255);
-
+  PRINTF("-- touch_approve\n");
+  uint8_t signature[255] = {0};
+  PRINTF("-- A\n");
   // Derive priv-pub again
   nuls_private_derive_keypair(reqContext.accountFrom.path, reqContext.accountFrom.pathLength, reqContext.accountFrom.chainCode);
+  PRINTF("-- B\n");
   unsigned short signatureSize = nuls_signverify_finalhash(&private_key, 1, txContext.digest, sizeof(txContext.digest), signature, sizeof(signature));
+  PRINTF("-- C. signatureSize %d\n", signatureSize);
 
-  //Paranoid
-  os_memset(&private_key, 0, sizeof(private_key));
-
+  PRINTF("-- D\n");
   initResponse();
+  PRINTF("-- E\n");
   addToResponse(signature, signatureSize);
+  PRINTF("-- F\n");
 
   unsigned int tx = flushResponseToIO(G_io_apdu_buffer);
   G_io_apdu_buffer[tx]   = 0x90;
@@ -40,11 +42,14 @@ void touch_approve() {
 
   io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
 
+  //Paranoid
+  os_memset(&private_key, 0, sizeof(private_key));
   //reset contexts
   os_memset(&reqContext, 0, sizeof(reqContext));
   os_memset(&txContext, 0, sizeof(txContext));
   os_memset(&commContext, 0, sizeof(commContext));
   os_memset(&commPacket, 0, sizeof(commPacket));
+  PRINTF("-- G\n");
 
   // Allow restart of operation
   commContext.started = false;

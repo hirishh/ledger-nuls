@@ -8,15 +8,11 @@
  */
 static const bagl_element_t ui_3_alias_nano[] = {
   CLEAN_SCREEN,
-  TITLE_ITEM("Send from", 0x01),
-  TITLE_ITEM("Output", 0x02),
-  TITLE_ITEM("Remark", 0x03),
-  TITLE_ITEM("Amount", 0x04),
+  TITLE_ITEM("Alias for address", 0x01),
+  TITLE_ITEM("Alias", 0x02),
   TITLE_ITEM("Fees", 0x05),
   ICON_ARROW_RIGHT(0x01),
   ICON_ARROW_RIGHT(0x02),
-  ICON_ARROW_RIGHT(0x03),
-  ICON_ARROW_RIGHT(0x04),
   ICON_CHECK(0x05),
   ICON_CROSS(0x00),
   LINEBUFFER,
@@ -24,51 +20,24 @@ static const bagl_element_t ui_3_alias_nano[] = {
 
 
 static uint8_t stepProcessor_3_alias(uint8_t step) {
-
-  if(step == 2) {
-    if(txContext.nOutCursor < txContext.nOut)
-      return 2;
-
-    if(txContext.remarkSize == 0)
-      return 4;
-  }
-
   return step + 1;
 }
 
 static void uiProcessor_3_alias(uint8_t step) {
-  uint8_t addressToShow[32] = {0};
-  uint8_t outputBuilder[50] = {0};
   unsigned short amountTextSize;
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
-      //Send From
-      os_memmove(lineBuffer, &reqContext.accountFrom.addressBase58, 32);
-      lineBuffer[32] = '\0';
+      //Alias for address
+      os_memmove(lineBuffer, &reqContext.accountFrom.addressBase58, ADDRESS_LENGTH);
+      lineBuffer[ADDRESS_LENGTH] = '\0';
       break;
     case 2:
-      // Output
-      outputBuilder[0] = '#';
-      amountTextSize = nuls_int_to_string(txContext.nOutCursor, outputBuilder + 1);
-      outputBuilder[1 + amountTextSize] = ':';
-      outputBuilder[1 + amountTextSize + 1] = ' ';
-      nuls_address_to_encoded_base58(txContext.outputAddress[txContext.nOutCursor],
-              outputBuilder + 1 + amountTextSize + 2);
-      outputBuilder[32 + 3 + amountTextSize] = '\0';
-      txContext.nOutCursor++;
-      os_memmove(lineBuffer, outputBuilder, 50);
+      // Alias
+      os_memmove(lineBuffer, &txContext.tx_specific_fields.alias.alias, txContext.tx_specific_fields.alias.aliasSize);
+      lineBuffer[txContext.tx_specific_fields.alias.aliasSize] = '\0';
       break;
     case 3:
-      //Remark
-      os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
-      break;
-    case 4:
-      //Amount Spent (without change)
-      amountTextSize = nuls_hex_amount_to_displayable(txContext.amountSpent, lineBuffer);
-      lineBuffer[amountTextSize] = '\0';
-      break;
-    case 5:
       //Fees
       amountTextSize = nuls_hex_amount_to_displayable(txContext.fees, lineBuffer);
       lineBuffer[amountTextSize] = '\0';
@@ -89,19 +58,20 @@ void tx_parse_specific_3_alias() {
    * - remark -> remarkLength Bytes (max 30 bytes)
    *
    * TX_SPECIFIC (handled here)
-   * - placeholder -> 4 bytes (0xFFFFFFFF)
    * - len:address
    * - len:alias
    *
-   * COIN_INPUT
+   * COIN_INPUT (multiple)
    * - owner (hash + index)
    * - amount
    * - locktime
-   * COIN_OUTPUT
-   * - owner (address or script)
+   * COIN_OUTPUT (change + blackhole)
+   * - owner (address only)
    * - amount
    * - locktime
    * */
+
+  uint64_t tmpVarInt = 0;
 
   //NB: There are no break in this switch. This is intentional.
   switch(txContext.tx_parsing_state) {
@@ -109,39 +79,41 @@ void tx_parse_specific_3_alias() {
     case BEGINNING:
       PRINTF("-- BEGINNING\n");
 
-    case PLACEHOLDER:
-      txContext.tx_parsing_state = PLACEHOLDER;
-      PRINTF("-- PLACEHOLDER\n");
-      is_available_to_parse(4);
-      uint32_t placeholder = nuls_read_u32(txContext.bufferPointer, 1, 0);
-      PRINTF("placeholder %.*H\n", 4, &placeholder);
-      if(placeholder != 0xFFFFFFFF)
-        THROW(INVALID_PARAMETER);
-      transaction_offset_increase(4);
-
-    case 3_ALIAS_ADDRESS_LENGTH:
-      txContext.tx_parsing_state = 3_ALIAS_ADDRESS_LENGTH;
+    case _3_ALIAS_ADDRESS_LENGTH:
+      txContext.tx_parsing_state = _3_ALIAS_ADDRESS_LENGTH;
       PRINTF("-- 3_ALIAS_ADDRESS_LENGTH\n");
-      txContext.fieldLength = transaction_get_varint();
-      if(txContext.fieldLength != ADDRESS_LENGTH) {
-        //TODO Can be also something else?
-        THROW(NOT_SUPPORTED);
+      tmpVarInt = transaction_get_varint();
+      if(tmpVarInt != ADDRESS_LENGTH) {
+        THROW(INVALID_PARAMETER);
       }
 
-    case 3_ALIAS_ADDRESS:
-      txContext.tx_parsing_state = 3_ALIAS_ADDRESS;
+    case _3_ALIAS_ADDRESS:
+      txContext.tx_parsing_state = _3_ALIAS_ADDRESS;
       PRINTF("-- 3_ALIAS_ADDRESS\n");
-      is_available_to_parse(txContext.fieldLength);
-      PRINTF("address: %.*H\n", txContext.fieldLength, txContext.bufferPointer);
+      is_available_to_parse(ADDRESS_LENGTH);
+      PRINTF("address: %.*H\n", ADDRESS_LENGTH, txContext.bufferPointer);
       //Save the address
       os_memmove(txContext.tx_specific_fields.alias.address, txContext.bufferPointer, ADDRESS_LENGTH);
+      transaction_offset_increase(ADDRESS_LENGTH);
 
 
-    case 3_ALIAS_ALIAS_LENGTH:
-      txContext.tx_parsing_state = 3_ALIAS_ALIAS_LENGTH;
-    case 3_ALIAS_ALIAS:
-      txContext.tx_parsing_state = 3_ALIAS_ALIAS;
+    case _3_ALIAS_ALIAS_LENGTH:
+      txContext.tx_parsing_state = _3_ALIAS_ALIAS_LENGTH;
+      PRINTF("-- 3_ALIAS_ALIAS_LENGTH\n");
+      tmpVarInt = transaction_get_varint();
+      if(tmpVarInt > MAX_ALIAS_LENGTH || tmpVarInt == 0) {
+        THROW(INVALID_PARAMETER);
+      }
+      txContext.tx_specific_fields.alias.aliasSize = (unsigned char) tmpVarInt;
 
+    case _3_ALIAS_ALIAS:
+      txContext.tx_parsing_state = _3_ALIAS_ALIAS;
+      PRINTF("-- 3_ALIAS_ALIAS\n");
+      is_available_to_parse(txContext.tx_specific_fields.alias.aliasSize);
+      PRINTF("alias: %.*H\n", txContext.tx_specific_fields.alias.aliasSize, txContext.bufferPointer);
+      //Save the alias
+      os_memmove(txContext.tx_specific_fields.alias.alias, txContext.bufferPointer, txContext.tx_specific_fields.alias.aliasSize);
+      transaction_offset_increase(txContext.tx_specific_fields.alias.aliasSize);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -155,25 +127,55 @@ void tx_parse_specific_3_alias() {
 
 void tx_finalize_3_alias() {
 
+  //Throw if:
+
+  // - changeAddress is not provided
+  if(reqContext.accountChange.pathLength == 0 || (reqContext.accountChange.pathLength > 0 && !txContext.changeFound)) {
+    // PRINTF(("Change not provided!\n"));
+    THROW(INVALID_PARAMETER);
+  }
+
+  // - addresFrom is different from alias.address
+  if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_specific_fields.alias.address, ADDRESS_LENGTH) != 0) {
+    // PRINTF(("Alias address is diffrent from account provided in input!\n"));
+    THROW(INVALID_PARAMETER);
+  }
+
+  /* Not Really necessary
+  // - changeFound is parsed correctly but it's not equal to alias.address
+  if(reqContext.accountChange.pathLength > 0 && txContext.changeFound &&
+     nuls_secure_memcmp(reqContext.accountChange.address, txContext.tx_specific_fields.alias.address, ADDRESS_LENGTH) != 0) {
+    // PRINTF(("Change Address provided but it's different from tx specific alias address\n"));
+    THROW(INVALID_PARAMETER);
+  }
+  */
+
+  // - should be only 1 output (excluding the change one) and it's a blackhole output with specific amount of 1 Nuls
+  if(
+      txContext.nOut != 1 ||
+      (txContext.nOut == 1 && nuls_secure_memcmp(txContext.outputAddress[0], BLACK_HOLE_ADDRESS, ADDRESS_LENGTH) != 0) ||
+      (txContext.nOut == 1 && nuls_secure_memcmp(txContext.outputAmount[0], BLACK_HOLE_ALIAS_AMOUNT, AMOUNT_LENGTH) != 0)
+    ) {
+    // PRINTF(("Blackhole output is not corret (wrong address or amount)\n"));
+    THROW(INVALID_PARAMETER);
+  }
+
+  //Calculate fees (input - output)
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
     // L_DEBUG_APP(("Fee amount not consistent\n"));
     THROW(INVALID_PARAMETER);
   }
-
-  os_memmove(txContext.amountSpent, txContext.totalOutputAmount, AMOUNT_LENGTH);
-  if(txContext.changeFound) {
-    if (transaction_amount_sub_be(txContext.amountSpent, txContext.amountSpent, txContext.changeAmount)) {
-      // L_DEBUG_APP(("AmountSpent amount not consistent\n"));
-      THROW(INVALID_PARAMETER);
-    }
+  //Add blackhole output amount to fees
+  if (transaction_amount_add_be(txContext.fees, txContext.fees, txContext.outputAmount[0])) {
+    // L_DEBUG_APP(("Fee amount not consistent - blackhole\n"));
+    THROW(INVALID_PARAMETER);
   }
 
   PRINTF("finalize. Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
-  PRINTF("finalize. amountSpent: %.*H\n", AMOUNT_LENGTH, txContext.amountSpent);
 
   ux.elements = ui_3_alias_nano;
-  ux.elements_count = 13;
-  totalSteps = 5;
+  ux.elements_count = 9;
+  totalSteps = 3;
   step_processor = stepProcessor_3_alias;
   ui_processor = uiProcessor_3_alias;
 }

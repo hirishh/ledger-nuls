@@ -58,10 +58,10 @@ enum transaction_parsing_state_e {
     FIELD_REMARK = 0x04,
     /** Data Fields - TX Specifics */
     PLACEHOLDER = 0x05,
-    3_ALIAS_ADDRESS_LENGTH = 0x06,
-    3_ALIAS_ADDRESS = 0x07,
-    3_ALIAS_ALIAS_LENGTH = 0x08,
-    3_ALIAS_ALIAS = 0x09,
+    _3_ALIAS_ADDRESS_LENGTH = 0x06,
+    _3_ALIAS_ADDRESS = 0x07,
+    _3_ALIAS_ALIAS_LENGTH = 0x08,
+    _3_ALIAS_ALIAS = 0x09,
     //TODO for other TXs
     /** COIN: Input & Output */
     COIN_OWNER_DATA_LENGTH = 0x20,
@@ -73,7 +73,8 @@ typedef enum transaction_parsing_state_e transaction_parsing_state_t;
 
 typedef struct tx_type_specific_3_alias {
     unsigned char address[ADDRESS_LENGTH];
-    unsigned char alias[ADDRESS_LENGTH] // ?? Max alias size?
+    unsigned char alias[MAX_ALIAS_LENGTH];
+    unsigned char aliasSize;
 } tx_type_specific_3_alias_t;
 
 typedef struct tx_type_specific_5_join_consensus {
@@ -84,8 +85,7 @@ typedef struct tx_type_specific_5_join_consensus {
 
 } tx_type_specific_5_join_consensus_t;
 
-
-union tx_specific_fields {
+typedef union tx_specific_fields {
     tx_type_specific_3_alias_t alias;
 } tx_specific_fields_t;
 
@@ -115,9 +115,6 @@ typedef struct transaction_context {
     /** Length of the currently processed input/output for this transaction */
     unsigned long int currentInputOutputOwnerLength;
 
-    /** General length field (varint) used as temp variable */
-    unsigned long int fieldLength;
-
     /** Computed sum of transaction inputs */
     unsigned char totalInputAmount[AMOUNT_LENGTH];
 
@@ -145,7 +142,7 @@ typedef struct transaction_context {
     /** TX Specific fields **/
     tx_specific_fields_t tx_specific_fields;
 
-    unsigned char remark[REMARK_LENGTH];
+    unsigned char remark[MAX_REMARK_LENGTH];
     unsigned char remarkSize;
 
     uint8_t nOut;

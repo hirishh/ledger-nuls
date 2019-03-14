@@ -4,6 +4,7 @@
 
 #include "txs/common_parser.h"
 #include "txs/2_transfer.h"
+#include "txs/3_alias.h"
 
 
 #define TX_TYPE_CONSENSUS_REWARD 1
@@ -75,6 +76,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       case TX_TYPE_TRANSFER_TX:
         tx_parse = tx_parse_specific_2_transfer;
         tx_end = tx_finalize_2_transfer;
+        break;
+      case TX_TYPE_SET_ALIAS:
+        tx_parse = tx_parse_specific_3_alias;
+        tx_end = tx_finalize_3_alias;
         break;
       default:
         PRINTF("TYPE not supported\n");

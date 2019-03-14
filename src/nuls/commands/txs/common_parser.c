@@ -34,7 +34,7 @@ void parse_group_common() {
       txContext.tx_parsing_state = FIELD_REMARK_LENGTH;
       PRINTF("-- FIELD_REMARK_LENGTH\n");
       remarkVarInt = transaction_get_varint();
-      if(remarkVarInt > REMARK_LENGTH) {
+      if(remarkVarInt > MAX_REMARK_LENGTH) {
         THROW(INVALID_PARAMETER);
       }
       txContext.remarkSize = (unsigned char) remarkVarInt;
@@ -186,7 +186,7 @@ void parse_group_coin_output() {
         //Save the address as "toShow"
         os_memmove(txContext.outputAddress[txContext.nOut], txContext.bufferPointer, ADDRESS_LENGTH);
         //If address is not a P2PKH, throw an error since it's not yet supported
-        if(txContext.outputAddress[txContext.nOut][2] != 0x01) { //P2PKH //TODO support P2SH
+        if(txContext.outputAddress[txContext.nOut][2] != P2PKH_ADDRESS_TYPE) { //P2PKH //TODO support P2SH
           THROW(INVALID_PARAMETER);
         }
         transaction_offset_increase(ADDRESS_LENGTH);
@@ -209,10 +209,10 @@ void parse_group_coin_output() {
         txContext.nOut++;
 
         //Do check about changeAddress
-        //If is a change address -> remove from "toshow" and do "only-one" check
+        //If is a change address -> remove from "txContext.outputAddress" and do "only-one" check
         if(reqContext.accountChange.pathLength > 0) { // -> user specified accountChange in input
 
-          if(os_memcmp(txContext.outputAddress[txContext.nOut-1], reqContext.accountChange.address, 23) == 0) {
+          if(nuls_secure_memcmp(txContext.outputAddress[txContext.nOut-1], reqContext.accountChange.address, ADDRESS_LENGTH) == 0) {
             //Is the change output. Check if we have already parsed one
             if(txContext.changeFound) {
               THROW(INVALID_PARAMETER);
