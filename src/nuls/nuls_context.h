@@ -65,6 +65,7 @@ enum transaction_parsing_state_e {
     _5_JOIN_CONS_DEPOSIT = 0x10,
     _5_JOIN_CONS_ADDRESS = 0x11,
     _5_JOIN_CONS_AGENTHASH = 0x12,
+    _6_LEAVE_CONS_TXHASH = 0x13,
     //TODO for other TXs
     /** COIN: Input & Output */
     COIN_OWNER_DATA_LENGTH = 0x20,
@@ -86,9 +87,14 @@ typedef struct tx_type_specific_5_join_consensus {
     unsigned char agentHash[HASH_LENGTH];
 } tx_type_specific_5_join_consensus_t;
 
+typedef struct tx_type_specific_6_leave_consensus {
+    unsigned char txHash[HASH_LENGTH];
+} tx_type_specific_6_leave_consensus_t;
+
 typedef union tx_specific_fields {
     tx_type_specific_3_alias_t alias;
     tx_type_specific_5_join_consensus_t join_consensus;
+    tx_type_specific_6_leave_consensus_t leave_consensus;
 } tx_specific_fields_t;
 
 typedef struct transaction_context {

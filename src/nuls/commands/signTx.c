@@ -6,6 +6,7 @@
 #include "txs/2_transfer.h"
 #include "txs/3_alias.h"
 #include "txs/5_join_consensus.h"
+#include "txs/6_leave_consensus.h"
 
 
 #define TX_TYPE_1_CONSENSUS_REWARD 1
@@ -85,6 +86,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       case TX_TYPE_5_JOIN_CONSENSUS:
         tx_parse = tx_parse_specific_5_join_consensus;
         tx_end = tx_finalize_5_join_consensus;
+        break;
+      case TX_TYPE_6_CANCEL_CONSENSUS:
+        tx_parse = tx_parse_specific_6_leave_consensus;
+        tx_end = tx_finalize_6_leave_consensus;
         break;
       default:
         PRINTF("TYPE not supported\n");

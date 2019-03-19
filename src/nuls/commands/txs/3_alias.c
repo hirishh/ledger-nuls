@@ -1,5 +1,5 @@
 #include "common_parser.h"
-#include "2_transfer.h"
+#include "3_alias.h"
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
