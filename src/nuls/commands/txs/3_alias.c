@@ -34,8 +34,8 @@ static void uiProcessor_3_alias(uint8_t step) {
       break;
     case 2:
       // Alias
-      os_memmove(lineBuffer, &txContext.tx_specific_fields.alias.alias, txContext.tx_specific_fields.alias.aliasSize);
-      lineBuffer[txContext.tx_specific_fields.alias.aliasSize] = '\0';
+      os_memmove(lineBuffer, &txContext.tx_fields.alias.alias, txContext.tx_fields.alias.aliasSize);
+      lineBuffer[txContext.tx_fields.alias.aliasSize] = '\0';
       break;
     case 3:
       //Fees
@@ -93,7 +93,7 @@ void tx_parse_specific_3_alias() {
       is_available_to_parse(ADDRESS_LENGTH);
       PRINTF("address: %.*H\n", ADDRESS_LENGTH, txContext.bufferPointer);
       //Save the address
-      os_memmove(txContext.tx_specific_fields.alias.address, txContext.bufferPointer, ADDRESS_LENGTH);
+      os_memmove(txContext.tx_fields.alias.address, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
 
 
@@ -104,18 +104,18 @@ void tx_parse_specific_3_alias() {
       if(tmpVarInt > MAX_ALIAS_LENGTH || tmpVarInt == 0) {
         THROW(INVALID_PARAMETER);
       }
-      txContext.tx_specific_fields.alias.aliasSize = (unsigned char) tmpVarInt;
+      txContext.tx_fields.alias.aliasSize = (unsigned char) tmpVarInt;
 
     case _3_ALIAS_ALIAS:
       txContext.tx_parsing_state = _3_ALIAS_ALIAS;
       PRINTF("-- 3_ALIAS_ALIAS\n");
-      is_available_to_parse(txContext.tx_specific_fields.alias.aliasSize);
-      PRINTF("alias: %.*H\n", txContext.tx_specific_fields.alias.aliasSize, txContext.bufferPointer);
+      is_available_to_parse(txContext.tx_fields.alias.aliasSize);
+      PRINTF("alias: %.*H\n", txContext.tx_fields.alias.aliasSize, txContext.bufferPointer);
       //Save the alias
-      os_memmove(txContext.tx_specific_fields.alias.alias, txContext.bufferPointer, txContext.tx_specific_fields.alias.aliasSize);
-      txContext.tx_specific_fields.alias.alias[txContext.tx_specific_fields.alias.aliasSize] = '\0';
-      PRINTF("aliasStr: %s\n", txContext.tx_specific_fields.alias.alias);
-      transaction_offset_increase(txContext.tx_specific_fields.alias.aliasSize);
+      os_memmove(txContext.tx_fields.alias.alias, txContext.bufferPointer, txContext.tx_fields.alias.aliasSize);
+      txContext.tx_fields.alias.alias[txContext.tx_fields.alias.aliasSize] = '\0';
+      PRINTF("aliasStr: %s\n", txContext.tx_fields.alias.alias);
+      transaction_offset_increase(txContext.tx_fields.alias.aliasSize);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -141,7 +141,7 @@ void tx_finalize_3_alias() {
   PRINTF("tx_finalize_3_alias - A\n");
 
   // - addresFrom is different from alias.address
-  if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_specific_fields.alias.address, ADDRESS_LENGTH) != 0) {
+  if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_fields.alias.address, ADDRESS_LENGTH) != 0) {
     // PRINTF(("Alias address is different from account provided in input!\n"));
     THROW(INVALID_PARAMETER);
   }
@@ -151,7 +151,7 @@ void tx_finalize_3_alias() {
   /* Not Really necessary
   // - changeFound is parsed correctly but it's not equal to alias.address
   if(reqContext.accountChange.pathLength > 0 && txContext.changeFound &&
-     nuls_secure_memcmp(reqContext.accountChange.address, txContext.tx_specific_fields.alias.address, ADDRESS_LENGTH) != 0) {
+     nuls_secure_memcmp(reqContext.accountChange.address, txContext.tx_fields.alias.address, ADDRESS_LENGTH) != 0) {
     // PRINTF(("Change Address provided but it's different from tx specific alias address\n"));
     THROW(INVALID_PARAMETER);
   }

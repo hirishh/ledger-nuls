@@ -34,11 +34,11 @@ static void uiProcessor_6_leave_consensus(uint8_t step) {
       break;
     case 2:
       //TX Hash
-      //snprintf(lineBuffer, 50, "%.*X", txContext.tx_specific_fields.join_consensus.agentHash);
+      //snprintf(lineBuffer, 50, "%.*X", txContext.tx_fields.join_consensus.agentHash);
       //os_memmove(lineBuffer + 46, "...\0", 4);
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, txContext.tx_specific_fields.leave_consensus.txHash,
-              8, txContext.tx_specific_fields.leave_consensus.txHash + HASH_LENGTH - 8);
+              8, txContext.tx_fields.leave_consensus.txHash,
+              8, txContext.tx_fields.leave_consensus.txHash + HASH_LENGTH - 8);
       break;
     case 3:
       //Fees
@@ -61,9 +61,7 @@ void tx_parse_specific_6_leave_consensus() {
    * - remark -> remarkLength Bytes (max 30 bytes)
    *
    * TX_SPECIFIC (handled here)
-   * - amount
-   * - address
-   * - agentHash
+   * - txHash
    *
    * COIN_INPUT (multiple)
    * - owner (hash + index)
@@ -87,9 +85,9 @@ void tx_parse_specific_6_leave_consensus() {
       txContext.tx_parsing_state = _6_LEAVE_CONS_TXHASH;
       PRINTF("-- _6_LEAVE_CONS_TXHASH\n");
       is_available_to_parse(HASH_LENGTH);
-      os_memmove(txContext.tx_specific_fields.leave_consensus.txHash, txContext.bufferPointer, HASH_LENGTH);
+      os_memmove(txContext.tx_fields.leave_consensus.txHash, txContext.bufferPointer, HASH_LENGTH);
       transaction_offset_increase(HASH_LENGTH);
-      PRINTF("txHash: %.*H\n", HASH_LENGTH, txContext.tx_specific_fields.leave_consensus.txHash);
+      PRINTF("txHash: %.*H\n", HASH_LENGTH, txContext.tx_fields.leave_consensus.txHash);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;

@@ -66,6 +66,8 @@ enum transaction_parsing_state_e {
     _5_JOIN_CONS_ADDRESS = 0x11,
     _5_JOIN_CONS_AGENTHASH = 0x12,
     _6_LEAVE_CONS_TXHASH = 0x13,
+    _10_DATA_TXHASH_LENGTH = 0x14,
+    _10_DATA_TXHASH_DATA = 0x15,
     //TODO for other TXs
     /** COIN: Input & Output */
     COIN_OWNER_DATA_LENGTH = 0x20,
@@ -91,11 +93,19 @@ typedef struct tx_type_specific_6_leave_consensus {
     unsigned char txHash[HASH_LENGTH];
 } tx_type_specific_6_leave_consensus_t;
 
-typedef union tx_specific_fields {
+typedef struct tx_type_specific_10_data {
+    unsigned long int size;
+    unsigned long int sizeMissing;
+    cx_sha256_t hash;
+    unsigned char digest[DIGEST_LENGTH];
+} tx_type_specific_10_data_t;
+
+typedef union tx_fields {
     tx_type_specific_3_alias_t alias;
     tx_type_specific_5_join_consensus_t join_consensus;
     tx_type_specific_6_leave_consensus_t leave_consensus;
-} tx_specific_fields_t;
+    tx_type_specific_10_data_t data;
+} tx_fields_t;
 
 typedef struct transaction_context {
 
@@ -103,7 +113,7 @@ typedef struct transaction_context {
     cx_sha256_t txHash;
 
     /** Holds digest to sign */
-    uint8_t digest[32];
+    uint8_t digest[DIGEST_LENGTH];
 
     /** Type of the transaction */
     uint16_t type;
@@ -148,7 +158,7 @@ typedef struct transaction_context {
     /** Fields to Display  */
 
     /** TX Specific fields **/
-    tx_specific_fields_t tx_specific_fields;
+    tx_fields_t tx_fields;
 
     unsigned char remark[MAX_REMARK_LENGTH];
     unsigned char remarkSize;

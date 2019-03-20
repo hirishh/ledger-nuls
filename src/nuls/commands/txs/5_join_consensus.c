@@ -36,16 +36,16 @@ static void uiProcessor_5_join_consensus(uint8_t step) {
       break;
     case 2:
       //Deposit
-      amountTextSize = nuls_hex_amount_to_displayable(txContext.tx_specific_fields.join_consensus.deposit, lineBuffer);
+      amountTextSize = nuls_hex_amount_to_displayable(txContext.tx_fields.join_consensus.deposit, lineBuffer);
       lineBuffer[amountTextSize] = '\0';
       break;
     case 3:
       //Agent Hash
-      //snprintf(lineBuffer, 50, "%.*X", txContext.tx_specific_fields.join_consensus.agentHash);
+      //snprintf(lineBuffer, 50, "%.*X", txContext.tx_fields.join_consensus.agentHash);
       //os_memmove(lineBuffer + 46, "...\0", 4);
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, txContext.tx_specific_fields.join_consensus.agentHash,
-              8, txContext.tx_specific_fields.join_consensus.agentHash + HASH_LENGTH - 8);
+              8, txContext.tx_fields.join_consensus.agentHash,
+              8, txContext.tx_fields.join_consensus.agentHash + HASH_LENGTH - 8);
       break;
     case 4:
       //Fees
@@ -94,26 +94,26 @@ void tx_parse_specific_5_join_consensus() {
       txContext.tx_parsing_state = _5_JOIN_CONS_DEPOSIT;
       PRINTF("-- _5_JOIN_CONS_DEPOSIT\n");
       is_available_to_parse(AMOUNT_LENGTH);
-      nuls_swap_bytes(txContext.tx_specific_fields.join_consensus.deposit, txContext.bufferPointer, AMOUNT_LENGTH);
+      nuls_swap_bytes(txContext.tx_fields.join_consensus.deposit, txContext.bufferPointer, AMOUNT_LENGTH);
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, txContext.tx_specific_fields.join_consensus.deposit);
+      PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, txContext.tx_fields.join_consensus.deposit);
 
     case _5_JOIN_CONS_ADDRESS:
       txContext.tx_parsing_state = _5_JOIN_CONS_ADDRESS;
       PRINTF("-- _5_JOIN_CONS_ADDRESS\n");
       is_available_to_parse(ADDRESS_LENGTH);
       //Save the address
-      os_memmove(txContext.tx_specific_fields.join_consensus.address, txContext.bufferPointer, ADDRESS_LENGTH);
+      os_memmove(txContext.tx_fields.join_consensus.address, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("address: %.*H\n", ADDRESS_LENGTH, txContext.tx_specific_fields.join_consensus.address);
+      PRINTF("address: %.*H\n", ADDRESS_LENGTH, txContext.tx_fields.join_consensus.address);
 
     case _5_JOIN_CONS_AGENTHASH:
       txContext.tx_parsing_state = _5_JOIN_CONS_AGENTHASH;
       PRINTF("-- _5_JOIN_CONS_AGENTHASH\n");
       is_available_to_parse(HASH_LENGTH);
-      os_memmove(txContext.tx_specific_fields.join_consensus.agentHash, txContext.bufferPointer, HASH_LENGTH);
+      os_memmove(txContext.tx_fields.join_consensus.agentHash, txContext.bufferPointer, HASH_LENGTH);
       transaction_offset_increase(HASH_LENGTH);
-      PRINTF("agentHash: %.*H\n", HASH_LENGTH, txContext.tx_specific_fields.join_consensus.agentHash);
+      PRINTF("agentHash: %.*H\n", HASH_LENGTH, txContext.tx_fields.join_consensus.agentHash);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -139,7 +139,7 @@ void tx_finalize_5_join_consensus() {
   PRINTF("tx_finalize_5_join_consensus - A\n");
 
   // - addresFrom is different from join_consensus.address
-  if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_specific_fields.join_consensus.address, ADDRESS_LENGTH) != 0) {
+  if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_fields.join_consensus.address, ADDRESS_LENGTH) != 0) {
     // PRINTF(("Deposit address is different from account provided in input!\n"));
     THROW(INVALID_PARAMETER);
   }
@@ -149,16 +149,16 @@ void tx_finalize_5_join_consensus() {
   /* Not Really necessary
   // - changeFound is parsed correctly but it's not equal to alias.address
   if(reqContext.accountChange.pathLength > 0 && txContext.changeFound &&
-     nuls_secure_memcmp(reqContext.accountChange.address, txContext.tx_specific_fields.alias.address, ADDRESS_LENGTH) != 0) {
+     nuls_secure_memcmp(reqContext.accountChange.address, txContext.tx_fields.alias.address, ADDRESS_LENGTH) != 0) {
     // PRINTF(("Change Address provided but it's different from tx specific alias address\n"));
     THROW(INVALID_PARAMETER);
   }
   */
 
   PRINTF("tx_finalize_5_join_consensus - nuls_secure_memcmp min deposit %d\n",
-          nuls_secure_memcmp(txContext.tx_specific_fields.join_consensus.deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH));
+          nuls_secure_memcmp(txContext.tx_fields.join_consensus.deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH));
 
-  if(nuls_secure_memcmp(txContext.tx_specific_fields.join_consensus.deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH) < 0) {
+  if(nuls_secure_memcmp(txContext.tx_fields.join_consensus.deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH) < 0) {
     // PRINTF(("Number of output is wrong. Only 1 normal output and must be a black hole)\n"));
     THROW(INVALID_PARAMETER);
   }
@@ -196,7 +196,7 @@ void tx_finalize_5_join_consensus() {
   }
 
   //Stake (We reuse amount Spent
-  if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, txContext.tx_specific_fields.join_consensus.deposit)) {
+  if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, txContext.tx_fields.join_consensus.deposit)) {
     // L_DEBUG_APP(("Fee amount not consistent\n"));
     THROW(INVALID_PARAMETER);
   }
