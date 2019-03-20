@@ -33,6 +33,14 @@ unsigned short nuls_public_key_to_encoded_base58(
         uint8_t *out_address,
         uint8_t *out_addressBase58);
 
+bool is_p2pkh_addr(uint8_t addr_type);
+
+bool is_contract_addr(uint8_t addr_type);
+
+bool is_p2sh_addr(uint8_t addr_type);
+
+bool is_contract_tx(uint16_t tx_type);
+
 /**
  * Derive encoded base58 associated to the specific address (chainId + addresstype + ripemid160).
  * @param chainId + addresstype + ripemid160 of compressedpubkey

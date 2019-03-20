@@ -1,6 +1,9 @@
 #include "common_parser.h"
 #include "../../nuls_internals.h"
 
+unsigned char amountStr[25];
+unsigned char amountSize;
+
 void parse_group_common() {
 
   if(txContext.tx_parsing_group != COMMON) {
@@ -98,6 +101,9 @@ void parse_group_coin_input() {
         //save amount
         nuls_swap_bytes(amount, txContext.bufferPointer, AMOUNT_LENGTH);
         PRINTF("amount: %.*H\n", 8, amount);
+        amountSize = nuls_hex_amount_to_displayable(amount, amountStr);
+        amountStr[amountSize] = '\0';
+        PRINTF("amountStr: %s\n", amountStr);
 
         if (transaction_amount_add_be(txContext.totalInputAmount, txContext.totalInputAmount, amount)) {
           // L_DEBUG_APP(("Input amount Overflow\n"));
@@ -186,7 +192,8 @@ void parse_group_coin_output() {
         //Save the address as "toShow"
         os_memmove(txContext.outputAddress[txContext.nOut], txContext.bufferPointer, ADDRESS_LENGTH);
         //If address is not a P2PKH, throw an error since it's not yet supported
-        if(txContext.outputAddress[txContext.nOut][2] != P2PKH_ADDRESS_TYPE) { //P2PKH //TODO support P2SH
+        if(!is_p2pkh_addr(txContext.outputAddress[txContext.nOut][2]) && !is_contract_tx(txContext.type)) { //TODO support P2SH
+          PRINTF("Address is not a P2PKH. address_type is %d\n", txContext.outputAddress[txContext.nOut][2]);
           THROW(INVALID_PARAMETER);
         }
         transaction_offset_increase(ADDRESS_LENGTH);
@@ -204,6 +211,9 @@ void parse_group_coin_output() {
         PRINTF("output #%d\n", txContext.nOut);
         PRINTF("Address:  %.*H\n", ADDRESS_LENGTH, txContext.outputAddress[txContext.nOut]);
         PRINTF("amount: %.*H\n", AMOUNT_LENGTH, txContext.outputAmount[txContext.nOut]);
+        amountSize = nuls_hex_amount_to_displayable(txContext.outputAmount[txContext.nOut], amountStr);
+        amountStr[amountSize] = '\0';
+        PRINTF("amountStr: %s\n", amountStr);
         PRINTF("totalOutputAmount: %.*H\n", AMOUNT_LENGTH, txContext.totalOutputAmount);
 
         txContext.nOut++;

@@ -33,6 +33,25 @@ uint8_t getxor(uint8_t *buffer, uint8_t length) {
   return xor;
 }
 
+bool is_p2pkh_addr(uint8_t addr_type) {
+  return addr_type == ADDRESS_TYPE_P2PKH;
+}
+
+bool is_contract_addr(uint8_t addr_type) {
+  return addr_type == ADDRESS_TYPE_CONTRACT;
+}
+
+bool is_p2sh_addr(uint8_t addr_type) {
+  return addr_type == ADDRESS_TYPE_P2SH;
+}
+
+bool is_contract_tx(uint16_t tx_type) {
+  return  tx_type == TX_TYPE_100_CREATE_CONTRACT ||
+          tx_type == TX_TYPE_101_CALL_CONTRACT ||
+          tx_type == TX_TYPE_102_DELETE_CONTRACT ||
+          tx_type == TX_TYPE_103_TRANSFER_CONTRACT;
+}
+
 unsigned short nuls_public_key_to_encoded_base58 (
         uint8_t WIDE *compressedPublicKey,
         uint16_t chainId, uint8_t addressType,

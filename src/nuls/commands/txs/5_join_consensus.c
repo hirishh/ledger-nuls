@@ -98,6 +98,12 @@ void tx_parse_specific_5_join_consensus() {
       transaction_offset_increase(AMOUNT_LENGTH);
       PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, txContext.tx_fields.join_consensus.deposit);
 
+      // - Check here that deposit is more than Min Deposit
+      if(nuls_secure_memcmp(txContext.tx_fields.join_consensus.deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH) < 0) {
+        // PRINTF(("Number of output is wrong. Only 1 normal output and must be a black hole)\n"));
+        THROW(INVALID_PARAMETER);
+      }
+
     case _5_JOIN_CONS_ADDRESS:
       txContext.tx_parsing_state = _5_JOIN_CONS_ADDRESS;
       PRINTF("-- _5_JOIN_CONS_ADDRESS\n");
@@ -106,6 +112,12 @@ void tx_parse_specific_5_join_consensus() {
       os_memmove(txContext.tx_fields.join_consensus.address, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
       PRINTF("address: %.*H\n", ADDRESS_LENGTH, txContext.tx_fields.join_consensus.address);
+
+      // - Check here that address is the same as accountFrom
+      if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_fields.join_consensus.address, ADDRESS_LENGTH) != 0) {
+        // PRINTF(("Deposit address is different from account provided in input!\n"));
+        THROW(INVALID_PARAMETER);
+      }
 
     case _5_JOIN_CONS_AGENTHASH:
       txContext.tx_parsing_state = _5_JOIN_CONS_AGENTHASH;
@@ -138,13 +150,6 @@ void tx_finalize_5_join_consensus() {
 
   PRINTF("tx_finalize_5_join_consensus - A\n");
 
-  // - addresFrom is different from join_consensus.address
-  if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_fields.join_consensus.address, ADDRESS_LENGTH) != 0) {
-    // PRINTF(("Deposit address is different from account provided in input!\n"));
-    THROW(INVALID_PARAMETER);
-  }
-
-  PRINTF("tx_finalize_5_join_consensus - B\n");
 
   /* Not Really necessary
   // - changeFound is parsed correctly but it's not equal to alias.address
@@ -155,13 +160,7 @@ void tx_finalize_5_join_consensus() {
   }
   */
 
-  PRINTF("tx_finalize_5_join_consensus - nuls_secure_memcmp min deposit %d\n",
-          nuls_secure_memcmp(txContext.tx_fields.join_consensus.deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH));
 
-  if(nuls_secure_memcmp(txContext.tx_fields.join_consensus.deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH) < 0) {
-    // PRINTF(("Number of output is wrong. Only 1 normal output and must be a black hole)\n"));
-    THROW(INVALID_PARAMETER);
-  }
 
   /*
   PRINTF("tx_finalize_5_join_consensus - nOut %d\n", txContext.nOut);

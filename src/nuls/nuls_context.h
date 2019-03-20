@@ -57,23 +57,42 @@ enum transaction_parsing_state_e {
     FIELD_REMARK_LENGTH = 0x03,
     FIELD_REMARK = 0x04,
     /** Data Fields - TX Specifics */
-    PLACEHOLDER = 0x05,
-    _3_ALIAS_ADDRESS_LENGTH = 0x06,
-    _3_ALIAS_ADDRESS = 0x07,
-    _3_ALIAS_ALIAS_LENGTH = 0x08,
-    _3_ALIAS_ALIAS = 0x09,
-    _5_JOIN_CONS_DEPOSIT = 0x10,
-    _5_JOIN_CONS_ADDRESS = 0x11,
-    _5_JOIN_CONS_AGENTHASH = 0x12,
-    _6_LEAVE_CONS_TXHASH = 0x13,
-    _10_DATA_TXHASH_LENGTH = 0x14,
-    _10_DATA_TXHASH_DATA = 0x15,
+    PLACEHOLDER = 0x10,
+
+    _3_ALIAS_ADDRESS_LENGTH = 0x30,
+    _3_ALIAS_ADDRESS = 0x31,
+    _3_ALIAS_ALIAS_LENGTH = 0x32,
+    _3_ALIAS_ALIAS = 0x33,
+
+    _5_JOIN_CONS_DEPOSIT = 0x50,
+    _5_JOIN_CONS_ADDRESS = 0x51,
+    _5_JOIN_CONS_AGENTHASH = 0x52,
+
+    _6_LEAVE_CONS_TXHASH = 0x60,
+
+    _10_DATA_TXHASH_LENGTH = 0xa0,
+    _10_DATA_TXHASH_DATA = 0xa1,
+
+    _101_CALL_CONTRACT_SENDER = 0xb0,
+    _101_CALL_CONTRACT_CADDRESS = 0xb1,
+    _101_CALL_CONTRACT_VALUE = 0xb2,
+    _101_CALL_CONTRACT_GASLIMIT = 0xb3,
+    _101_CALL_CONTRACT_PRICE = 0xb4,
+    _101_CALL_CONTRACT_METHODNAME_LENGTH = 0xb5,
+    _101_CALL_CONTRACT_METHODNAME = 0xb6,
+    _101_CALL_CONTRACT_METHODDESC_LENGTH = 0xb7,
+    _101_CALL_CONTRACT_METHODDESC = 0xb8,
+    _101_CALL_CONTRACT_ARGS_I = 0xb9,
+    _101_CALL_CONTRACT_ARGS_J = 0xba,
+    _101_CALL_CONTRACT_ARG_LENGTH = 0xbb,
+    _101_CALL_CONTRACT_ARG = 0xbc,
+
     //TODO for other TXs
     /** COIN: Input & Output */
-    COIN_OWNER_DATA_LENGTH = 0x20,
-    COIN_DATA = 0x21,
+    COIN_OWNER_DATA_LENGTH = 0xf0,
+    COIN_DATA = 0xf1,
     /** Ready to be signed */
-    READY_TO_SIGN = 0x30
+    READY_TO_SIGN = 0xff
 };
 typedef enum transaction_parsing_state_e transaction_parsing_state_t;
 
@@ -100,11 +119,30 @@ typedef struct tx_type_specific_10_data {
     unsigned char digest[DIGEST_LENGTH];
 } tx_type_specific_10_data_t;
 
+typedef struct tx_type_specific_101_call_contract {
+    unsigned char sender[ADDRESS_LENGTH];
+    unsigned char contractAddress[ADDRESS_LENGTH];
+    unsigned char value[AMOUNT_LENGTH];
+    unsigned char gasLimit[AMOUNT_LENGTH];
+    unsigned char price[AMOUNT_LENGTH];
+    unsigned char methodName[MAX_METHODNAME_LENGTH];
+    uint64_t methodNameSize;
+    unsigned char args[50]; //args to show at display
+    unsigned char argsSize;
+    uint64_t argLength;
+    char arg_i; // Number of arguments
+    char curr_i; // Current argument in process
+    char arg_j; // Number of items in argument
+    char curr_j; // Current item in process
+
+} tx_type_specific_101_call_contract_t;
+
 typedef union tx_fields {
     tx_type_specific_3_alias_t alias;
     tx_type_specific_5_join_consensus_t join_consensus;
     tx_type_specific_6_leave_consensus_t leave_consensus;
     tx_type_specific_10_data_t data;
+    tx_type_specific_101_call_contract_t call_contract;
 } tx_fields_t;
 
 typedef struct transaction_context {
@@ -149,7 +187,7 @@ typedef struct transaction_context {
     unsigned char *bufferPointer;
 
     /** Bytes to be parsed (in the next chunk) */
-    unsigned char saveBufferForNextChunk[250];
+    unsigned char saveBufferForNextChunk[50];
     uint16_t saveBufferLength;
 
     /** Total Tx Bytes */
