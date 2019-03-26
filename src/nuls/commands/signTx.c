@@ -5,8 +5,10 @@
 #include "txs/common_parser.h"
 #include "txs/2_transfer.h"
 #include "txs/3_alias.h"
+#include "txs/4_register_agent.h"
 #include "txs/5_join_consensus.h"
 #include "txs/6_leave_consensus.h"
+#include "txs/9_unregister_agent.h"
 #include "txs/10_data.h"
 #include "txs/101_call_contract.h"
 
@@ -71,6 +73,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         tx_parse = tx_parse_specific_3_alias;
         tx_end = tx_finalize_3_alias;
         break;
+      case TX_TYPE_4_REGISTER_CONSENSUS_NODE:
+        tx_parse = tx_parse_specific_4_register_agent;
+        tx_end = tx_finalize_4_register_agent;
+        break;
       case TX_TYPE_5_JOIN_CONSENSUS:
         tx_parse = tx_parse_specific_5_join_consensus;
         tx_end = tx_finalize_5_join_consensus;
@@ -78,6 +84,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       case TX_TYPE_6_CANCEL_CONSENSUS:
         tx_parse = tx_parse_specific_6_leave_consensus;
         tx_end = tx_finalize_6_leave_consensus;
+        break;
+      case TX_TYPE_9_UNREGISTER_CONSENSUS_NODE:
+        tx_parse = tx_parse_specific_9_unregister_agent;
+        tx_end = tx_finalize_9_unregister_agent;
         break;
       case TX_TYPE_10_BUSINESS_DATA:
         tx_parse = tx_parse_specific_10_data;
@@ -97,6 +107,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
   //insert at beginning saveBufferForNextChunk if present
   if(txContext.saveBufferLength > 0) {
     PRINTF("saveBufferLength handler\n");
+    PRINTF("buffer saveBufferLength: %d\n", txContext.saveBufferLength);
+    PRINTF("buffer headerBytesRead: %d\n", headerBytesRead);
+    PRINTF("buffer initial packet->length: %d\n", packet->length);
+
     //Shift TX payload (without header) of saveBufferLength bytes on the right
     os_memmove(
             packet->data + headerBytesRead + txContext.saveBufferLength,
@@ -112,6 +126,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     packet->length += txContext.saveBufferLength;
     txContext.saveBufferLength = 0;
     os_memset(txContext.saveBufferForNextChunk, 0, sizeof(txContext.saveBufferForNextChunk));
+    PRINTF("buffer final packet->length: %d\n", packet->length);
   }
 
   PRINTF("SIGN - Handler\n");

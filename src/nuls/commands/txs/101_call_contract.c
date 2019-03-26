@@ -115,7 +115,7 @@ void tx_parse_specific_101_call_contract() {
    * - owner (hash + index)
    * - amount
    * - locktime
-   * COIN_OUTPUT (change + blackhole)
+   * COIN_OUTPUT (change)
    * - owner (address only)
    * - amount
    * - locktime

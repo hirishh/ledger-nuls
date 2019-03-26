@@ -14,5 +14,7 @@ unsigned long int nuls_read_u32(unsigned char *buffer, unsigned char be, unsigne
 unsigned char nuls_secure_memcmp(void WIDE *buf1, void WIDE *buf2, unsigned short length);
 unsigned char nuls_int_to_string(unsigned long int number, char *out);
 unsigned char nuls_hex_amount_to_displayable(unsigned char *amount, char *dest);
+void nuls_double_to_displayable(double f, int ndigits, char *dest);
+
 
 #endif

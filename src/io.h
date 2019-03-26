@@ -32,8 +32,8 @@ typedef struct commContext_t {
 } commContext_t;
 
 typedef struct commPacket_t {
-    uint8_t data[550];
-    uint8_t length;
+    uint8_t data[350];
+    uint16_t length;
     bool first;
 } commPacket_t;
 

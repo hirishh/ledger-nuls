@@ -1,4 +1,5 @@
 #include "nuls_helpers.h"
+#include <stdlib.h>
 
 #define SCRATCH_SIZE 21
 
@@ -176,4 +177,8 @@ unsigned char nuls_hex_amount_to_displayable(unsigned char *amount, char *dest) 
     dest[targetOffset++] = scratch[offset++] + '0';
   }
   return targetOffset;
+}
+
+void nuls_double_to_displayable(double f, int ndigits, char *dest) {
+  gcvt(f, ndigits, dest);
 }

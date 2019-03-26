@@ -64,11 +64,19 @@ enum transaction_parsing_state_e {
     _3_ALIAS_ALIAS_LENGTH = 0x32,
     _3_ALIAS_ALIAS = 0x33,
 
+    _4_REGISTER_AGENT_DEPOSIT = 0x40,
+    _4_REGISTER_AGENT_AGENT_ADDR = 0x41,
+    _4_REGISTER_AGENT_PACKING_ADDR = 0x42,
+    _4_REGISTER_AGENT_REWARD_ADDR = 0x43,
+    _4_REGISTER_AGENT_COMMISSION_RATE = 0x44,
+
     _5_JOIN_CONS_DEPOSIT = 0x50,
     _5_JOIN_CONS_ADDRESS = 0x51,
     _5_JOIN_CONS_AGENTHASH = 0x52,
 
     _6_LEAVE_CONS_TXHASH = 0x60,
+
+    _9_UNREGISTER_AGENT_TXHASH = 0x90,
 
     _10_DATA_TXHASH_LENGTH = 0xa0,
     _10_DATA_TXHASH_DATA = 0xa1,
@@ -102,6 +110,14 @@ typedef struct tx_type_specific_3_alias {
     unsigned char aliasSize;
 } tx_type_specific_3_alias_t;
 
+typedef struct tx_type_specific_4_register_agent {
+    unsigned char deposit[AMOUNT_LENGTH];
+    unsigned char agentAddress[ADDRESS_LENGTH];
+    unsigned char packagingAddress[ADDRESS_LENGTH];
+    unsigned char rewardAddress[ADDRESS_LENGTH];
+    double commissionRate;
+} tx_type_specific_4_register_agent_t;
+
 typedef struct tx_type_specific_5_join_consensus {
     unsigned char deposit[AMOUNT_LENGTH];
     unsigned char address[ADDRESS_LENGTH];
@@ -111,6 +127,10 @@ typedef struct tx_type_specific_5_join_consensus {
 typedef struct tx_type_specific_6_leave_consensus {
     unsigned char txHash[HASH_LENGTH];
 } tx_type_specific_6_leave_consensus_t;
+
+typedef struct tx_type_specific_9_unregister_agent {
+    unsigned char txHash[HASH_LENGTH];
+} tx_type_specific_9_unregister_agent_t;
 
 typedef struct tx_type_specific_10_data {
     unsigned long int size;
@@ -139,8 +159,10 @@ typedef struct tx_type_specific_101_call_contract {
 
 typedef union tx_fields {
     tx_type_specific_3_alias_t alias;
+    tx_type_specific_4_register_agent_t register_agent;
     tx_type_specific_5_join_consensus_t join_consensus;
     tx_type_specific_6_leave_consensus_t leave_consensus;
+    tx_type_specific_9_unregister_agent_t unregister_agent;
     tx_type_specific_10_data_t data;
     tx_type_specific_101_call_contract_t call_contract;
 } tx_fields_t;
@@ -181,13 +203,13 @@ typedef struct transaction_context {
     uint16_t bytesRead;
 
     /** Bytes to be parsed (in the chunk) */
-    unsigned char bytesChunkRemaining;
+    uint16_t bytesChunkRemaining;
 
     /** Current pointer to the transaction buffer for the transaction parser */
     unsigned char *bufferPointer;
 
     /** Bytes to be parsed (in the next chunk) */
-    unsigned char saveBufferForNextChunk[50];
+    unsigned char saveBufferForNextChunk[100];
     uint16_t saveBufferLength;
 
     /** Total Tx Bytes */

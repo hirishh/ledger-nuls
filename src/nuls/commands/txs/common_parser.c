@@ -93,6 +93,9 @@ void parse_group_coin_input() {
       case COIN_DATA:
         txContext.tx_parsing_state = COIN_DATA;
         PRINTF("-- COIN_DATA\n");
+        PRINTF("currentInputOutputOwnerLength: %d\n", txContext.currentInputOutputOwnerLength);
+        PRINTF("-- checking availability for bytes: %d\n", txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
+        PRINTF("buffer bytesChunkRemaining: %d\n", txContext.bytesChunkRemaining);
         //Check if we can parse whole input (owner + amount + locktime)
         is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
         //now we have whole input
@@ -175,7 +178,6 @@ void parse_group_coin_output() {
         PRINTF("-- currentInputOutput: %d\n", txContext.currentInputOutput);
         txContext.currentInputOutputOwnerLength = transaction_get_varint();
         PRINTF("-- currentInputOutputOwnerLength: %d\n", txContext.currentInputOutputOwnerLength);
-        PRINTF("-- ADDRESS_LENGTH: %d\n", ADDRESS_LENGTH);
         if(txContext.currentInputOutputOwnerLength != ADDRESS_LENGTH) {
           //TODO At the moment we support only transfer to address. rawScript is not implemented
           THROW(NOT_SUPPORTED);
@@ -184,6 +186,8 @@ void parse_group_coin_output() {
       case COIN_DATA:
         txContext.tx_parsing_state = COIN_DATA;
         PRINTF("-- COIN_DATA\n");
+        PRINTF("-- checking availability for bytes: %d\n", txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
+        PRINTF("buffer bytesChunkRemaining: %d\n", txContext.bytesChunkRemaining);
         //Check if we can parse whole input (owner + amount + locktime)
         is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
         //now we have whole output
