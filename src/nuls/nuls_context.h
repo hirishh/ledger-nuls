@@ -76,6 +76,8 @@ enum transaction_parsing_state_e {
 
     _6_LEAVE_CONS_TXHASH = 0x60,
 
+    _9_UNREGISTER_AGENT_TXHASH = 0x90,
+
     _10_DATA_TXHASH_LENGTH = 0xa0,
     _10_DATA_TXHASH_DATA = 0xa1,
 
@@ -126,6 +128,10 @@ typedef struct tx_type_specific_6_leave_consensus {
     unsigned char txHash[HASH_LENGTH];
 } tx_type_specific_6_leave_consensus_t;
 
+typedef struct tx_type_specific_9_unregister_agent {
+    unsigned char txHash[HASH_LENGTH];
+} tx_type_specific_9_unregister_agent_t;
+
 typedef struct tx_type_specific_10_data {
     unsigned long int size;
     unsigned long int sizeMissing;
@@ -156,6 +162,7 @@ typedef union tx_fields {
     tx_type_specific_4_register_agent_t register_agent;
     tx_type_specific_5_join_consensus_t join_consensus;
     tx_type_specific_6_leave_consensus_t leave_consensus;
+    tx_type_specific_9_unregister_agent_t unregister_agent;
     tx_type_specific_10_data_t data;
     tx_type_specific_101_call_contract_t call_contract;
 } tx_fields_t;

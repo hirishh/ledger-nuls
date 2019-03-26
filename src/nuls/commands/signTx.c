@@ -8,6 +8,7 @@
 #include "txs/4_register_agent.h"
 #include "txs/5_join_consensus.h"
 #include "txs/6_leave_consensus.h"
+#include "txs/9_unregister_agent.h"
 #include "txs/10_data.h"
 #include "txs/101_call_contract.h"
 
@@ -83,6 +84,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       case TX_TYPE_6_CANCEL_CONSENSUS:
         tx_parse = tx_parse_specific_6_leave_consensus;
         tx_end = tx_finalize_6_leave_consensus;
+        break;
+      case TX_TYPE_9_UNREGISTER_CONSENSUS_NODE:
+        tx_parse = tx_parse_specific_9_unregister_agent;
+        tx_end = tx_finalize_9_unregister_agent;
         break;
       case TX_TYPE_10_BUSINESS_DATA:
         tx_parse = tx_parse_specific_10_data;
