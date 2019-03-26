@@ -223,15 +223,18 @@ void parse_group_coin_output() {
         if(reqContext.accountChange.pathLength > 0) { // -> user specified accountChange in input
 
           if(nuls_secure_memcmp(txContext.outputAddress[txContext.nOut-1], reqContext.accountChange.address, ADDRESS_LENGTH) == 0) {
-            //Is the change output. Check if we have already parsed one
-            if(txContext.changeFound) {
-              THROW(INVALID_PARAMETER);
-            }
             PRINTF("It's a valid change address!\n");
             txContext.changeFound = true;
-            //Save to changeAmount
-            os_memmove(txContext.changeAmount, txContext.outputAmount[txContext.nOut-1], AMOUNT_LENGTH);
+            //Add to changeAmount
+            if (transaction_amount_add_be(txContext.changeAmount, txContext.changeAmount, txContext.outputAmount[txContext.nOut-1])) {
+              // L_DEBUG_APP(("Input amount Overflow\n"));
+              THROW(INVALID_PARAMETER);
+            }
             PRINTF("changeAmount: %.*H\n", AMOUNT_LENGTH, txContext.changeAmount);
+            amountSize = nuls_hex_amount_to_displayable(txContext.changeAmount, amountStr);
+            amountStr[amountSize] = '\0';
+            PRINTF("changeAmountStr: %s\n", amountStr);
+
             //Remove from "toShow"
             txContext.nOut--;
           }
