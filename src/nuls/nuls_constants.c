@@ -8,5 +8,8 @@ const unsigned char  BLACK_HOLE_ADDRESS[ADDRESS_LENGTH] =
 const unsigned char BLACK_HOLE_ALIAS_AMOUNT[AMOUNT_LENGTH] =
         { 0x00, 0x00, 0x00, 0x00, 0x05, 0xf5, 0xe1, 0x00 }; //1 Nuls
 
+const unsigned char MIN_DEPOSIT_REGISTER_AGENT[AMOUNT_LENGTH] =
+        { 0x00, 0x00, 0x00, 0x2e, 0x90, 0xed, 0xd0, 0x00 }; //20000 Nuls //TODO
+
 const unsigned char MIN_DEPOSIT_JOIN_CONSENSUS[AMOUNT_LENGTH] =
         { 0x00, 0x00, 0x00, 0x2e, 0x90, 0xed, 0xd0, 0x00 }; //2000 Nuls

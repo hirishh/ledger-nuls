@@ -5,6 +5,7 @@
 #include "txs/common_parser.h"
 #include "txs/2_transfer.h"
 #include "txs/3_alias.h"
+#include "txs/4_register_agent.h"
 #include "txs/5_join_consensus.h"
 #include "txs/6_leave_consensus.h"
 #include "txs/10_data.h"
@@ -70,6 +71,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
       case TX_TYPE_3_SET_ALIAS:
         tx_parse = tx_parse_specific_3_alias;
         tx_end = tx_finalize_3_alias;
+        break;
+      case TX_TYPE_4_REGISTER_CONSENSUS_NODE:
+        tx_parse = tx_parse_specific_4_register_agent;
+        tx_end = tx_finalize_4_register_agent;
         break;
       case TX_TYPE_5_JOIN_CONSENSUS:
         tx_parse = tx_parse_specific_5_join_consensus;

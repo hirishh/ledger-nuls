@@ -43,6 +43,8 @@
 extern const unsigned char BLACK_HOLE_ADDRESS[ADDRESS_LENGTH];
 extern const unsigned char BLACK_HOLE_ALIAS_AMOUNT[AMOUNT_LENGTH];
 
+extern const unsigned char MIN_DEPOSIT_REGISTER_AGENT[AMOUNT_LENGTH];
 extern const unsigned char MIN_DEPOSIT_JOIN_CONSENSUS[AMOUNT_LENGTH];
+
 
 #endif
