@@ -119,7 +119,7 @@ Depending on the Display flag, the command will either return immediately or asy
 The **result** will show chainCode, publicKey, address and  using the *Result Response Protocol*
 
 
-### Signing
+### Signing (TX or Message)
 
 With the signing commands you can sign both transactions and messages.
 

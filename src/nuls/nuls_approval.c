@@ -68,18 +68,4 @@ void touch_approve() {
 }
 
 
-unsigned int approval_nano_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
-  switch (button_mask) {
-    case BUTTON_EVT_RELEASED | BUTTON_RIGHT:
-      touch_approve();
-      break;
-
-    case BUTTON_EVT_RELEASED | BUTTON_LEFT:
-      touch_deny();
-      break;
-  }
-  return 0;
-}
-
-
 
