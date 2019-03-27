@@ -3,6 +3,7 @@
 #include "../io.h"
 #include "./commands/getPubKey.h"
 #include "./commands/signTx.h"
+#include "./commands/signMsg.h"
 
 #define INS_GET_PUBLIC_KEY 0x04
 #define INS_SIGN 0x05
@@ -15,11 +16,10 @@ void innerHandleCommPacket(commPacket_t *packet, commContext_t *context) {
     case INS_GET_PUBLIC_KEY:
       break;
     case INS_SIGN_MSG:
+      handleSignMessagePacket(packet, context);
       break;
     case INS_SIGN:
-      PRINTF("handleSignTxPacket - pre innerHandleCommPacket\n");
       handleSignTxPacket(packet, context);
-      PRINTF("handleSignTxPacket - post innerHandleCommPacket\n");
       break;
     case INS_PING:
     case INS_VERSION:
@@ -36,6 +36,7 @@ bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t *lastPack
       handleGetPublicKey(flags, lastPacket);
       break;
     case INS_SIGN_MSG:
+      processSignMessage(flags);
       break;
     case INS_SIGN:
       PRINTF("innerProcessCommPacket - pre finalizeSignTx\n");

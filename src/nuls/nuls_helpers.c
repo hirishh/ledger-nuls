@@ -179,6 +179,31 @@ unsigned char nuls_hex_amount_to_displayable(unsigned char *amount, char *dest) 
   return targetOffset;
 }
 
+unsigned char nuls_encode_varint(unsigned long int value, unsigned char *dest) {
+  uint8_t tmp;
+  if (value <= 0xfc) {
+    os_memmove(whereTo, &value, 1);
+    return 1;
+  } else if (value <= 0xffff) {
+    tmp = 0xfd;
+    os_memmove(whereTo, &tmp, 1);
+    os_memmove(whereTo+1, &value, 2);
+    return 3;
+  } else if (value <= 0xffffffff) {
+    tmp = 0xfe;
+    os_memmove(whereTo, &tmp, 1);
+    os_memmove(whereTo+1, &value, 4);
+    return 5;
+  } else if (value <= 0xffffffffffffffff) {
+    tmp = 0xff;
+    os_memmove(whereTo, &tmp, 1);
+    os_memmove(whereTo+1, &value, 8);
+    return 9;
+  }
+  // Error
+  THROW(INVALID_PARAMETER);
+}
+
 void nuls_double_to_displayable(double f, int ndigits, char *dest) {
   gcvt(f, ndigits, dest);
 }

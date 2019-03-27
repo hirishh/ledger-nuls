@@ -176,7 +176,7 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
     THROW(0x6700); // INCORRECT_LENGTH
   }
 
-  PRINTF("packet->length %d\n", packet->length - headerBytesRead);
+  PRINTF("packet->length without header %d\n", packet->length - headerBytesRead);
   //PRINTF("packet-data %.*H\n", packet->length - headerBytesRead, &packet->data + headerBytesRead);
   return headerBytesRead;
 }
