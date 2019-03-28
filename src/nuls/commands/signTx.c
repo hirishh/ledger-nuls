@@ -10,7 +10,9 @@
 #include "txs/6_leave_consensus.h"
 #include "txs/9_unregister_agent.h"
 #include "txs/10_data.h"
+#include "txs/100_create_contract.h"
 #include "txs/101_call_contract.h"
+#include "txs/102_delete_contract.h"
 
 typedef void (*tx_parse_fn)();
 typedef void (*tx_end_fn)();
@@ -93,9 +95,17 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         tx_parse = tx_parse_specific_10_data;
         tx_end = tx_finalize_10_data;
         break;
+      case TX_TYPE_100_CREATE_CONTRACT:
+        tx_parse = tx_parse_specific_100_create_contract;
+        tx_end = tx_finalize_100_create_contract;
+        break;
       case TX_TYPE_101_CALL_CONTRACT:
         tx_parse = tx_parse_specific_101_call_contract;
         tx_end = tx_finalize_101_call_contract;
+        break;
+      case TX_TYPE_102_DELETE_CONTRACT:
+        tx_parse = tx_parse_specific_102_delete_contract;
+        tx_end = tx_finalize_102_delete_contract;
         break;
       default:
         PRINTF("TYPE not supported\n");

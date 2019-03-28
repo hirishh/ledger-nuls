@@ -96,12 +96,11 @@ void tx_parse_specific_10_data() {
       PRINTF("Missing Data: %d\n", txContext.tx_fields.data.sizeMissing);
       PRINTF("Current Chunk Size: %d\n", txContext.bytesChunkRemaining);
 
-      uint64_t dataSizeToProcess = MIN(txContext.tx_fields.data.sizeMissing,
-                                   txContext.bytesChunkRemaining);
+      tmpVarInt = MIN(txContext.tx_fields.data.sizeMissing, txContext.bytesChunkRemaining);
       cx_hash(&txContext.tx_fields.data.hash.header, 0,
-              txContext.bufferPointer, dataSizeToProcess, NULL, 0);
-      txContext.tx_fields.data.sizeMissing -= dataSizeToProcess;
-      transaction_offset_increase(dataSizeToProcess);
+              txContext.bufferPointer, tmpVarInt, NULL, 0);
+      txContext.tx_fields.data.sizeMissing -= tmpVarInt;
+      transaction_offset_increase(tmpVarInt);
 
       //Check if we need next chunk
       if(txContext.bytesChunkRemaining == 0 && txContext.tx_fields.data.sizeMissing != 0) {
