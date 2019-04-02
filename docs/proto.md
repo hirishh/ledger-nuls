@@ -132,12 +132,12 @@ With the signing commands you can sign both transactions and messages.
 | AccountFrom: Address type            |       1        | 1 = default, 2 = contract, 3 = P2SH |
 | AccountFrom: First Derivation path   |       4        |                                     |
 |               ...                    |       4        |                                     |
-| AccountFrom: Last Derivation path     |       4        |                                     |
+| AccountFrom: Last Derivation path     |      4        |                                     |
 | AccountChange: # Of Bip44 paths      |       1        | If 0 -> No Change Output            |
 | AccountChange: Address type          |       1        | If there is AccountChange           |
 | AccountChange: First Derivation path |       4        | If there is AccountChange           |
 |               ...                    |       4        | If there is AccountChange           |
 | AccountChange:Last Derivation path   |       4        | If there is AccountChange           |
-| Data Length (BigEndian)              |       2        |                                     |
+| Data Length (BigEndian)              |       4        |                                     |
 | Data                                 |       _        |  tx bytes or message bytes          |
 

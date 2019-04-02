@@ -28,7 +28,7 @@ typedef struct request_context {
     local_address_t accountChange;
 
     //For signature
-    uint16_t signableContentLength;
+    uint32_t signableContentLength;
 } request_context_t;
 
 

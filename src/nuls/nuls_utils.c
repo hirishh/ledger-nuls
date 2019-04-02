@@ -168,8 +168,8 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
   }
 
   //Data Length
-  reqContext.signableContentLength = nuls_read_u16(packet->data + headerBytesRead, 1, 0);
-  headerBytesRead += 2;
+  reqContext.signableContentLength = nuls_read_u32(packet->data + headerBytesRead, 1, 0);
+  headerBytesRead += 4;
   PRINTF("reqContext.signableContentLength %d\n", reqContext.signableContentLength);
   // Check signable content length if is correct
   if (reqContext.signableContentLength >= commContext.totalAmount) {

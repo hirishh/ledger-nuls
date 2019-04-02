@@ -21,7 +21,7 @@
 #include <memory.h>
 #include "os.h"
 #include "main.h"
-#include "nuls/nuls_ui_elements.h"
+#include "nuls/nuls_internals.h"
 
 #include "io.h"
 #include "nuls/impl.h"
@@ -73,12 +73,11 @@ void handleStartCommPacket() {
   commContext.crc16 = 0;
   commContext.totalAmount = 0;
 
-  commContext.totalAmount = G_io_apdu_buffer[5] << 8;
-  commContext.totalAmount += G_io_apdu_buffer[6];
+  commContext.totalAmount = nuls_read_u32(G_io_apdu_buffer + 5, 1, 0);
 
   prevCRC = 0;
   initResponse();
-  addToResponse(&commContext.totalAmount, 2);
+  addToResponse(&commContext.totalAmount, 4);
 }
 
 /**
