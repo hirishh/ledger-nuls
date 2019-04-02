@@ -84,7 +84,7 @@ enum transaction_parsing_state_e {
     _100_CREATE_CONTRACT_SENDER = 0xa0,
     _100_CREATE_CONTRACT_CADDRESS = 0xa1,
     _100_CREATE_CONTRACT_VALUE = 0xa2,
-    _100_CREATE_CONTRACT_CODELEN = 0xa3
+    _100_CREATE_CONTRACT_CODELEN = 0xa3,
     _100_CREATE_CONTRACT_CODE_LENGTH = 0xa4,
     _100_CREATE_CONTRACT_CODE = 0xa5,
     _100_CREATE_CONTRACT_GASLIMIT = 0xa6,
@@ -161,6 +161,7 @@ typedef struct tx_type_specific_100_create_contract {
     uint32_t codeLen;
     uint32_t codeLenMissing;
     cx_sha256_t codeHash;
+    unsigned char codeDigest[DIGEST_LENGTH];
     unsigned char value[AMOUNT_LENGTH];
     unsigned char gasLimit[AMOUNT_LENGTH];
     unsigned char price[AMOUNT_LENGTH];
@@ -204,7 +205,7 @@ typedef union tx_fields {
     tx_type_specific_10_data_t              data;
     tx_type_specific_100_create_contract_t  create_contract;
     tx_type_specific_101_call_contract_t    call_contract;
-    tx_type_specific_102_delete_contract_t  delete_contract
+    tx_type_specific_102_delete_contract_t  delete_contract;
 } tx_fields_t;
 
 typedef struct transaction_context {

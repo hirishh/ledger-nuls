@@ -71,8 +71,8 @@ static void uiProcessor_100_create_contract(uint8_t step) {
     case 7:
       //Code Hash
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, cc->codeHash.digest,
-              8, cc->codeHash.digest + DIGEST_LENGTH - 8);
+              8, cc->codeDigest,
+              8, cc->codeDigest + DIGEST_LENGTH - 8);
       break;
     case 8:
       //Args
@@ -202,8 +202,8 @@ void tx_parse_specific_100_create_contract() {
         PRINTF("codeLenMissing is 0 - let's finalize the data hash\n");
         //let's finalize the hash
         unsigned char fake[1];
-        cx_hash(&cc->codeHash.header, CX_LAST, fake, 0, cc->codeHash.digest, DIGEST_LENGTH);
-        PRINTF("Code Digest %.*H\n", DIGEST_LENGTH, cc->codeHash.digest);
+        cx_hash(&cc->codeHash.header, CX_LAST, fake, 0, cc->codeDigest, DIGEST_LENGTH);
+        PRINTF("Code Digest %.*H\n", DIGEST_LENGTH, cc->codeDigest);
       }
 
     case _100_CREATE_CONTRACT_GASLIMIT:
