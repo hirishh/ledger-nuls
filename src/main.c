@@ -73,12 +73,14 @@ void handleStartCommPacket() {
   commContext.crc16 = 0;
   commContext.totalAmount = 0;
 
-  commContext.totalAmount = G_io_apdu_buffer[5] << 8;
-  commContext.totalAmount += G_io_apdu_buffer[6];
+  commContext.totalAmount = G_io_apdu_buffer[5] << 24;
+  commContext.totalAmount += G_io_apdu_buffer[6] << 16;
+  commContext.totalAmount += G_io_apdu_buffer[7] << 8;
+  commContext.totalAmount += G_io_apdu_buffer[8];
 
   prevCRC = 0;
   initResponse();
-  addToResponse(&commContext.totalAmount, 2);
+  addToResponse(&commContext.totalAmount, 4);
 }
 
 /**
