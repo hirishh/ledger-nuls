@@ -13,9 +13,10 @@ static const bagl_element_t ui_101_call_contract_nano[] = {
   TITLE_ITEM("Value", 0x03),
   TITLE_ITEM("Gas Limit", 0x04),
   TITLE_ITEM("Price", 0x05),
-  TITLE_ITEM("Fees", 0x06),
-  TITLE_ITEM("MethodName", 0x07),
-  TITLE_ITEM("Arguments", 0x08),
+  TITLE_ITEM("MethodName", 0x06),
+  TITLE_ITEM("Arguments", 0x07),
+  TITLE_ITEM("Remark", 0x08),
+  TITLE_ITEM("Fees", 0x09),
   ICON_ARROW_RIGHT(0x01),
   ICON_ARROW_RIGHT(0x02),
   ICON_ARROW_RIGHT(0x03),
@@ -23,14 +24,19 @@ static const bagl_element_t ui_101_call_contract_nano[] = {
   ICON_ARROW_RIGHT(0x05),
   ICON_ARROW_RIGHT(0x06),
   ICON_ARROW_RIGHT(0x07),
-  ICON_CHECK(0x08),
+  ICON_ARROW_RIGHT(0x08),
+  ICON_CHECK(0x09),
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
 
 
 static uint8_t stepProcessor_101_call_contract(uint8_t step) {
-  return step + 1;
+  uint8_t nextStep = step + 1;
+  if(step == 7 && txContext.remarkSize == 0) {
+    nextStep++; // no remark
+  }
+  return nextStep;
 }
 
 static void uiProcessor_101_call_contract(uint8_t step) {
@@ -64,17 +70,12 @@ static void uiProcessor_101_call_contract(uint8_t step) {
       lineBuffer[amountTextSize] = '\0';
       break;
     case 6:
-      //Fees
-      amountTextSize = nuls_hex_amount_to_displayable(txContext.fees, lineBuffer);
-      lineBuffer[amountTextSize] = '\0';
-      break;
-    case 7:
       //Method Name
       amountTextSize = MIN(50, cc->methodNameSize);
       os_memmove(lineBuffer, cc->methodName, amountTextSize);
       lineBuffer[amountTextSize] = '\0';
       break;
-    case 8:
+    case 7:
       //Args
       amountTextSize = MIN(50, cc->argsSize);
       os_memmove(lineBuffer, cc->args, amountTextSize);
@@ -83,6 +84,16 @@ static void uiProcessor_101_call_contract(uint8_t step) {
       } else {
         os_memmove(lineBuffer + 46, "...\0", 4);
       }
+      break;
+    case 8:
+      //Remark
+      os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
+      lineBuffer[txContext.remarkSize] = '\0';
+      break;
+    case 9:
+      //Fees
+      amountTextSize = nuls_hex_amount_to_displayable(txContext.fees, lineBuffer);
+      lineBuffer[amountTextSize] = '\0';
       break;
     default:
       THROW(INVALID_STATE);
@@ -293,8 +304,8 @@ void tx_finalize_101_call_contract() {
   }
 
   ux.elements = ui_101_call_contract_nano;
-  ux.elements_count = 19;
-  totalSteps = 8;
+  ux.elements_count = 21;
+  totalSteps = 9;
   step_processor = stepProcessor_101_call_contract;
   ui_processor = uiProcessor_101_call_contract;
 }

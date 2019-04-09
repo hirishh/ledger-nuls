@@ -10,15 +10,23 @@ static const bagl_element_t ui_102_delete_contract_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Delete contract from", 0x01),
   TITLE_ITEM("Contract address", 0x02),
+  TITLE_ITEM("Remark", 0x03),
+  TITLE_ITEM("Fees", 0x04),
   ICON_ARROW_RIGHT(0x01),
-  ICON_CHECK(0x02),
+  ICON_ARROW_RIGHT(0x02),
+  ICON_ARROW_RIGHT(0x03),
+  ICON_CHECK(0x04),
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
 
 
 static uint8_t stepProcessor_102_delete_contract(uint8_t step) {
-  return step + 1;
+  uint8_t nextStep = step + 1;
+  if(step == 2 && txContext.remarkSize == 0) {
+    nextStep++; // no remark
+  }
+  return nextStep;
 }
 
 static void uiProcessor_102_delete_contract(uint8_t step) {
@@ -35,6 +43,16 @@ static void uiProcessor_102_delete_contract(uint8_t step) {
       //Contract Address
       nuls_address_to_encoded_base58(cc->contractAddress, lineBuffer);
       lineBuffer[BASE58_ADDRESS_LENGTH] = '\0';
+      break;
+    case 3:
+      //Remark
+      os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
+      lineBuffer[txContext.remarkSize] = '\0';
+      break;
+    case 4:
+      //Fees
+      amountTextSize = nuls_hex_amount_to_displayable(txContext.fees, lineBuffer);
+      lineBuffer[amountTextSize] = '\0';
       break;
     default:
       THROW(INVALID_STATE);
@@ -105,8 +123,8 @@ void tx_finalize_102_delete_contract() {
   }
 
   ux.elements = ui_102_delete_contract_nano;
-  ux.elements_count = 7;
-  totalSteps = 2;
+  ux.elements_count = 11;
+  totalSteps = 4;
   step_processor = stepProcessor_102_delete_contract;
   ui_processor = uiProcessor_102_delete_contract;
 }

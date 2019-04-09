@@ -10,17 +10,23 @@ static const bagl_element_t ui_3_alias_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Alias for address", 0x01),
   TITLE_ITEM("Alias", 0x02),
-  TITLE_ITEM("Fees", 0x03),
+  TITLE_ITEM("Remark", 0x03),
+  TITLE_ITEM("Fees", 0x04),
   ICON_ARROW_RIGHT(0x01),
   ICON_ARROW_RIGHT(0x02),
-  ICON_CHECK(0x03),
+  ICON_ARROW_RIGHT(0x03),
+  ICON_CHECK(0x04),
   ICON_CROSS(0x00),
   LINEBUFFER,
 };
 
 
 static uint8_t stepProcessor_3_alias(uint8_t step) {
-  return step + 1;
+  uint8_t nextStep = step + 1;
+  if(step == 2 && txContext.remarkSize == 0) {
+      nextStep++; // no remark
+  }
+  return nextStep;
 }
 
 static void uiProcessor_3_alias(uint8_t step) {
@@ -38,6 +44,11 @@ static void uiProcessor_3_alias(uint8_t step) {
       lineBuffer[txContext.tx_fields.alias.aliasSize] = '\0';
       break;
     case 3:
+      //Remark
+      os_memmove(lineBuffer, &txContext.remark, txContext.remarkSize);
+      lineBuffer[txContext.remarkSize] = '\0';
+      break;
+    case 4:
       //Fees
       amountTextSize = nuls_hex_amount_to_displayable(txContext.fees, lineBuffer);
       lineBuffer[amountTextSize] = '\0';
@@ -158,8 +169,8 @@ void tx_finalize_3_alias() {
   }
 
   ux.elements = ui_3_alias_nano;
-  ux.elements_count = 9;
-  totalSteps = 3;
+  ux.elements_count = 11;
+  totalSteps = 4;
   step_processor = stepProcessor_3_alias;
   ui_processor = uiProcessor_3_alias;
 }

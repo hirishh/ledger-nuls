@@ -23,16 +23,14 @@ static const bagl_element_t ui_2_transfer_nano[] = {
 };
 
 static uint8_t stepProcessor_2_transfer(uint8_t step) {
-
+  uint8_t nextStep = step + 1;
   if(step == 2) {
     if(txContext.nOutCursor < txContext.nOut)
-      return 2;
-
-    if(txContext.remarkSize == 0)
-      return 4;
+      return 2; //Loop on outputs
+    else if(txContext.remarkSize == 0)
+      nextStep++; // no remark
   }
-
-  return step + 1;
+  return nextStep;
 }
 
 static void uiProcessor_2_transfer(uint8_t step) {
@@ -112,6 +110,7 @@ void tx_parse_specific_2_transfer() {
 }
 
 void tx_finalize_2_transfer() {
+  PRINTF("tx_finalize_2_transfer\n");
 
   os_memmove(txContext.amountSpent, txContext.totalOutputAmount, AMOUNT_LENGTH);
   if(txContext.changeFound) {
@@ -120,7 +119,7 @@ void tx_finalize_2_transfer() {
       THROW(INVALID_PARAMETER);
     }
   }
-  PRINTF("finalize. amountSpent: %.*H\n", AMOUNT_LENGTH, txContext.amountSpent);
+  PRINTF("amountSpent: %.*H\n", AMOUNT_LENGTH, txContext.amountSpent);
 
   ux.elements = ui_2_transfer_nano;
   ux.elements_count = 13;
