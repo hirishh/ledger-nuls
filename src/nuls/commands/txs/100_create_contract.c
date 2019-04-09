@@ -93,12 +93,6 @@ void tx_parse_specific_100_create_contract() {
 
   /* TX Structure:
    *
-   * COMMON
-   * - type -> 2 Bytes
-   * - time -> 6 Bytes
-   * - remarkLength -> 1 Byte
-   * - remark -> remarkLength Bytes (max 30 bytes)
-   *
    * TX_SPECIFIC (handled here)
    * - sender - ADDRESS_LENGTH
    * - contractAddress - ADDRESS_LENGTH
@@ -111,14 +105,6 @@ void tx_parse_specific_100_create_contract() {
    *   -argn - 1 byte -> number of arg items
    *      - len:argitem
    *
-   * COIN_INPUT (multiple)
-   * - owner (hash + index)
-   * - amount
-   * - locktime
-   * COIN_OUTPUT (change)
-   * - owner (address only)
-   * - amount
-   * - locktime
    * */
 
   tx_type_specific_100_create_contract_t *cc = &(txContext.tx_fields.create_contract);
@@ -318,34 +304,10 @@ void tx_finalize_100_create_contract() {
   //Throw if:
 
   // - changeAddress is not provided
-  if(reqContext.accountChange.pathLength == 0 || (reqContext.accountChange.pathLength > 0 && !txContext.changeFound)) {
-    // PRINTF(("Change not provided!\n"));
+  if(reqContext.accountChange.pathLength == 0) {
+    PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
-
-  PRINTF("tx_finalize_100_create_contract - A\n");
-
-  /*
-  PRINTF("tx_finalize_100_create_contract - nOut %d\n", txContext.nOut);
-  PRINTF("tx_finalize_100_create_contract - txContext.outputAddress %.*H\n", ADDRESS_LENGTH, txContext.outputAddress[0]);
-  PRINTF("tx_finalize_100_create_contract - BLACK_HOLE_ADDRESS %.*H\n", ADDRESS_LENGTH, BLACK_HOLE_ADDRESS);
-  PRINTF("tx_finalize_100_create_contract - txContext.outputAmount %.*H\n", AMOUNT_LENGTH, txContext.outputAmount[0]);
-  PRINTF("tx_finalize_100_create_contract - BLACK_HOLE_ALIAS_AMOUNT %.*H\n", AMOUNT_LENGTH, BLACK_HOLE_ALIAS_AMOUNT);
-  PRINTF("tx_finalize_100_create_contract - nuls_secure_memcmp address %d\n", nuls_secure_memcmp(txContext.outputAddress[0], BLACK_HOLE_ADDRESS, ADDRESS_LENGTH));
-  PRINTF("tx_finalize_100_create_contract - nuls_secure_memcmp amount %d\n", nuls_secure_memcmp(txContext.outputAmount[0], BLACK_HOLE_ALIAS_AMOUNT, AMOUNT_LENGTH));
-  */
-
-  PRINTF("tx_finalize_100_create_contract - B\n");
-
-  //Calculate fees (input - output)
-  if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
-    // L_DEBUG_APP(("Fee amount not consistent\n"));
-    THROW(INVALID_PARAMETER);
-  }
-
-  PRINTF("tx_finalize_100_create_contract - C\n");
-
-  PRINTF("finalize. Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
 
   ux.elements = ui_100_create_contract_nano;
   ux.elements_count = 19;

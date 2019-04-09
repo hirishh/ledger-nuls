@@ -80,27 +80,13 @@ void tx_parse_specific_4_register_agent() {
 
   /* TX Structure:
    *
-   * COMMON
-   * - type -> 2 Bytes
-   * - time -> 6 Bytes
-   * - remarkLength -> 1 Byte
-   * - remark -> remarkLength Bytes (max 30 bytes)
-   *
-   * TX_SPECIFIC (handled here)
+   * TX_SPECIFIC
    * - depositAmount -> AMOUNT_LENGTH
    * - agentAddress -> ADDRESS_LENGTH
    * - packingAddress -> ADDRESS_LENGTH
    * - rewardAddress -> ADDRESS_LENGTH
    * - commissionRate -> Double LE (8 bytes)
    *
-   * COIN_INPUT (multiple)
-   * - owner (hash + index)
-   * - amount
-   * - locktime
-   * COIN_OUTPUT (change)
-   * - owner (address only)
-   * - amount
-   * - locktime
    * */
 
   //NB: There are no break in this switch. This is intentional.
@@ -186,66 +172,16 @@ void tx_finalize_4_register_agent() {
   //Throw if:
 
   // - changeAddress is not provided
-  if(reqContext.accountChange.pathLength == 0 || (reqContext.accountChange.pathLength > 0 && !txContext.changeFound)) {
-    // PRINTF(("Change not provided!\n"));
+  if(reqContext.accountChange.pathLength == 0) {
+    PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 
-  PRINTF("tx_finalize_4_register_agent - A\n");
-
-
-  /* Not Really necessary
-  // - changeFound is parsed correctly but it's not equal to alias.address
-  if(reqContext.accountChange.pathLength > 0 && txContext.changeFound &&
-     nuls_secure_memcmp(reqContext.accountChange.address, txContext.tx_fields.alias.address, ADDRESS_LENGTH) != 0) {
-    // PRINTF(("Change Address provided but it's different from tx specific alias address\n"));
-    THROW(INVALID_PARAMETER);
-  }
-  */
-
-
-
-  /*
-  PRINTF("tx_finalize_4_register_agent - nOut %d\n", txContext.nOut);
-  PRINTF("tx_finalize_4_register_agent - txContext.outputAddress %.*H\n", ADDRESS_LENGTH, txContext.outputAddress[0]);
-  PRINTF("tx_finalize_4_register_agent - BLACK_HOLE_ADDRESS %.*H\n", ADDRESS_LENGTH, BLACK_HOLE_ADDRESS);
-  PRINTF("tx_finalize_4_register_agent - txContext.outputAmount %.*H\n", AMOUNT_LENGTH, txContext.outputAmount[0]);
-  PRINTF("tx_finalize_4_register_agent - BLACK_HOLE_ALIAS_AMOUNT %.*H\n", AMOUNT_LENGTH, BLACK_HOLE_ALIAS_AMOUNT);
-  PRINTF("tx_finalize_4_register_agent - nuls_secure_memcmp address %d\n", nuls_secure_memcmp(txContext.outputAddress[0], BLACK_HOLE_ADDRESS, ADDRESS_LENGTH));
-  PRINTF("tx_finalize_4_register_agent - nuls_secure_memcmp amount %d\n", nuls_secure_memcmp(txContext.outputAmount[0], BLACK_HOLE_ALIAS_AMOUNT, AMOUNT_LENGTH));
-
-  // - should be only 1 output (excluding the change one) and it's a blackhole output with specific amount of 1 Nuls
-  if(txContext.nOut != 1) {
-    // PRINTF(("Number of output is wrong. Only 1 normal output and must be a black hole)\n"));
-    THROW(INVALID_PARAMETER);
-  }
-  if(
-      (txContext.nOut == 1 && nuls_secure_memcmp(txContext.outputAddress[0], BLACK_HOLE_ADDRESS, ADDRESS_LENGTH) != 0) ||
-      (txContext.nOut == 1 && nuls_secure_memcmp(txContext.outputAmount[0], BLACK_HOLE_ALIAS_AMOUNT, AMOUNT_LENGTH) != 0)
-    ) {
-    // PRINTF(("Blackhole output is not corret (wrong address or amount)\n"));
-    THROW(INVALID_PARAMETER);
-  }
-
-   */
-
-  PRINTF("tx_finalize_4_register_agent - C\n");
-
-  //Calculate fees (input - output)
-  if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
-    // L_DEBUG_APP(("Fee amount not consistent\n"));
-    THROW(INVALID_PARAMETER);
-  }
-
-  //Stake (We reuse amount Spent
+  //Stake (We reuse amount Spent)
   if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, txContext.tx_fields.join_consensus.deposit)) {
-    // L_DEBUG_APP(("Fee amount not consistent\n"));
+    PRINTF(("AmountSpent not consistent\n"));
     THROW(INVALID_PARAMETER);
   }
-
-  PRINTF("tx_finalize_4_register_agent - D\n");
-
-  PRINTF("finalize. Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
 
   ux.elements = ui_4_register_agent_nano;
   ux.elements_count = 17;

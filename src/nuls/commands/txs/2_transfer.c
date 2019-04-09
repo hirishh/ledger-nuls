@@ -80,23 +80,9 @@ void tx_parse_specific_2_transfer() {
 
   /* TX Structure:
    *
-   * COMMON
-   * - type -> 2 Bytes
-   * - time -> 6 Bytes
-   * - remarkLength -> 1 Byte
-   * - remark -> remarkLength Bytes (max 30 bytes)
-   *
-   * TX_SPECIFIC (handled here)
+   * TX_SPECIFIC
    * - placeholder -> 4 bytes (0xFFFFFFFF)
    *
-   * COIN_INPUT
-   * - owner (hash + index)
-   * - amount
-   * - locktime
-   * COIN_OUTPUT
-   * - owner (address or script)
-   * - amount
-   * - locktime
    * */
 
   //NB: There are no break in this switch. This is intentional.
@@ -127,11 +113,6 @@ void tx_parse_specific_2_transfer() {
 
 void tx_finalize_2_transfer() {
 
-  if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
-    // L_DEBUG_APP(("Fee amount not consistent\n"));
-    THROW(INVALID_PARAMETER);
-  }
-
   os_memmove(txContext.amountSpent, txContext.totalOutputAmount, AMOUNT_LENGTH);
   if(txContext.changeFound) {
     if (transaction_amount_sub_be(txContext.amountSpent, txContext.amountSpent, txContext.changeAmount)) {
@@ -139,8 +120,6 @@ void tx_finalize_2_transfer() {
       THROW(INVALID_PARAMETER);
     }
   }
-
-  PRINTF("finalize. Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
   PRINTF("finalize. amountSpent: %.*H\n", AMOUNT_LENGTH, txContext.amountSpent);
 
   ux.elements = ui_2_transfer_nano;

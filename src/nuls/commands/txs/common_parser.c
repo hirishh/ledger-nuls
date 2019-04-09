@@ -4,6 +4,15 @@
 unsigned char amountStr[25];
 unsigned char amountSize;
 
+/* TX Structure:
+   *
+   * COMMON
+   * - type -> 2 Bytes
+   * - time -> 6 Bytes
+   * - remarkLength -> 1 Byte
+   * - remark -> remarkLength Bytes (max 30 bytes)
+   *
+   * */
 void parse_group_common() {
 
   if(txContext.tx_parsing_group != COMMON) {
@@ -60,6 +69,19 @@ void parse_group_common() {
       THROW(INVALID_STATE);
   }
 }
+
+/* TX Structure:
+   *
+   * COIN_INPUT
+   * - owner (hash + index)
+   * - amount
+   * - locktime
+   * COIN_OUTPUT
+   * - owner (address or script)
+   * - amount
+   * - locktime
+   *
+   * */
 
 void parse_group_coin_input() {
 
@@ -268,6 +290,19 @@ void parse_group_coin_output() {
   while(txContext.remainingInputsOutputs != 0);
 
   PRINTF("-- OUT FROM COIN_OUTPUT\n");
+
+  //Calculate fees (input - output)
+  if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
+    PRINTF(("Fee amount not consistent\n"));
+    THROW(INVALID_PARAMETER);
+  }
+  PRINTF("Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
+
+  //Throw if change account is provided but change not found in output
+  if(reqContext.accountChange.pathLength > 0 && !txContext.changeFound) {
+    PRINTF(("Change not provided!\n"));
+    THROW(INVALID_PARAMETER);
+  }
 }
 
 void check_sanity_before_sign() {
