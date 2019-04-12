@@ -37,7 +37,7 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
 
   // if first packet with signing header
   if ( packet->first ) {
-    PRINTF("SIGN - First Packet\n");
+    PRINTF("SIGN MSG - First Packet\n");
     // Reset sha256 and context
     os_memset(&reqContext, 0, sizeof(reqContext));
     os_memset(&txContext, 0, sizeof(txContext));

@@ -63,4 +63,9 @@ uint32_t setReqContextForSign(commPacket_t *packet);
  */
 uint32_t setReqContextForGetPubKey(commPacket_t *packet);
 
+/**
+ * Kill Private key and reset all the contexts (reqContext, txContext, commContext, commPacket)
+ */
+void reset_contexts();
+
 #endif

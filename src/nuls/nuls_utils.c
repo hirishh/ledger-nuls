@@ -185,3 +185,17 @@ uint32_t setReqContextForGetPubKey(commPacket_t *packet) {
   reqContext.showConfirmation = packet->data[0];
   return extractAccountInfo(packet->data + 1, &reqContext.accountFrom);
 }
+
+void reset_contexts() {
+  // Kill private key - shouldn't be necessary but just in case.
+  os_memset(&private_key, 0, sizeof(private_key));
+
+  os_memset(&reqContext, 0, sizeof(reqContext));
+  os_memset(&txContext, 0, sizeof(txContext));
+  os_memset(&commContext, 0, sizeof(commContext));
+  os_memset(&commPacket, 0, sizeof(commPacket));
+
+  // Allow restart of operation
+  commContext.started = false;
+  commContext.read = 0;
+}

@@ -38,6 +38,8 @@ unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int but
 
       io_exchange(CHANNEL_APDU | IO_RETURN_AFTER_TX, tx+2);
 
+      reset_contexts();
+
       // Display back the original UX
       ui_idle();
       break;
@@ -56,6 +58,9 @@ static void ui_address(void) {
 }
 
 void handleGetPublicKey(volatile unsigned int *flags, commPacket_t *packet) {
+
+  PRINTF("GetPublicKey Command\n");
+
   //reset contexts
   os_memset(&reqContext, 0, sizeof(reqContext));
   os_memset(&txContext, 0, sizeof(txContext));
