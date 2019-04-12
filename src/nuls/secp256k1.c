@@ -44,9 +44,6 @@ unsigned short nuls_signverify_finalhash(
   if(sign) {
     unsigned int info = 0;
     result = cx_ecdsa_sign((cx_ecfp_private_key_t WIDE *) keyContext, CX_LAST | CX_RND_RFC6979, CX_SHA256, in, inlen, out, outlen, &info);
-    if (info & CX_ECCINFO_PARITY_ODD) {
-      out[0] |= 0x01;
-    }
   } else {
     result = cx_ecdsa_verify((cx_ecfp_public_key_t WIDE *) keyContext, CX_LAST, CX_SHA256, in, inlen, out, outlen);
   }
