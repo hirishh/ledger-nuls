@@ -116,7 +116,7 @@ void tx_finalize_2_transfer() {
   if(txContext.changeFound) {
     if (transaction_amount_sub_be(txContext.amountSpent, txContext.amountSpent, txContext.changeAmount)) {
       // L_DEBUG_APP(("AmountSpent amount not consistent\n"));
-      THROW(INVALID_PARAMETER);
+      THROW(EXCEPTION_OVERFLOW);
     }
   }
   PRINTF("amountSpent: %.*H\n", AMOUNT_LENGTH, txContext.amountSpent);

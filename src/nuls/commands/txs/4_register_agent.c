@@ -193,7 +193,7 @@ void tx_finalize_4_register_agent() {
   //Stake (We reuse amount Spent)
   if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, cc->deposit)) {
     PRINTF(("AmountSpent not consistent\n"));
-    THROW(INVALID_PARAMETER);
+    THROW(EXCEPTION_OVERFLOW);
   }
 
   ux.elements = ui_4_register_agent_nano;

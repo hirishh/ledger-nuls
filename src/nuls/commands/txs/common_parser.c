@@ -132,7 +132,7 @@ void parse_group_coin_input() {
 
         if (transaction_amount_add_be(txContext.totalInputAmount, txContext.totalInputAmount, amount)) {
           // L_DEBUG_APP(("Input amount Overflow\n"));
-          THROW(INVALID_PARAMETER);
+          THROW(EXCEPTION_OVERFLOW);
         }
         transaction_offset_increase(AMOUNT_LENGTH);
         //locktime
@@ -231,7 +231,7 @@ void parse_group_coin_output() {
 
         //Add to totalOutputAmount
         if(transaction_amount_add_be(txContext.totalOutputAmount, txContext.totalOutputAmount, txContext.outputAmount[txContext.nOut])) {
-          THROW(INVALID_PARAMETER);
+          THROW(EXCEPTION_OVERFLOW);
         }
 
         PRINTF("output #%d\n", txContext.nOut);
@@ -254,7 +254,7 @@ void parse_group_coin_output() {
             //Add to changeAmount
             if (transaction_amount_add_be(txContext.changeAmount, txContext.changeAmount, txContext.outputAmount[txContext.nOut-1])) {
               // L_DEBUG_APP(("Input amount Overflow\n"));
-              THROW(INVALID_PARAMETER);
+              THROW(EXCEPTION_OVERFLOW);
             }
             PRINTF("changeAmount: %.*H\n", AMOUNT_LENGTH, txContext.changeAmount);
             amountSize = nuls_hex_amount_to_displayable(txContext.changeAmount, amountStr);
@@ -294,7 +294,7 @@ void parse_group_coin_output() {
   //Calculate fees (input - output)
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
     PRINTF(("Fee amount not consistent\n"));
-    THROW(INVALID_PARAMETER);
+    THROW(EXCEPTION_OVERFLOW);
   }
   PRINTF("Fees: %.*H\n", AMOUNT_LENGTH, txContext.fees);
 

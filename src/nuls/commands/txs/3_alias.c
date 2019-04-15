@@ -166,7 +166,7 @@ void tx_finalize_3_alias() {
   //Add blackhole output amount to fees
   if (transaction_amount_add_be(txContext.fees, txContext.fees, txContext.outputAmount[0])) {
     PRINTF(("Fee amount not consistent - blackhole\n"));
-    THROW(INVALID_PARAMETER);
+    THROW(EXCEPTION_OVERFLOW);
   }
 
   ux.elements = ui_3_alias_nano;
