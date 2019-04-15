@@ -22,7 +22,6 @@ static const bagl_element_t ui_5_join_consensus_nano[] = {
   LINEBUFFER,
 };
 
-
 static uint8_t stepProcessor_5_join_consensus(uint8_t step) {
   uint8_t nextStep = step + 1;
 
@@ -32,6 +31,8 @@ static uint8_t stepProcessor_5_join_consensus(uint8_t step) {
 
   return nextStep;
 }
+
+static tx_type_specific_5_join_consensus_t *cc = &(txContext.tx_fields.join_consensus);
 
 static void uiProcessor_5_join_consensus(uint8_t step) {
   unsigned short amountTextSize;
@@ -44,16 +45,16 @@ static void uiProcessor_5_join_consensus(uint8_t step) {
       break;
     case 2:
       //Deposit
-      amountTextSize = nuls_hex_amount_to_displayable(txContext.tx_fields.join_consensus.deposit, lineBuffer);
+      amountTextSize = nuls_hex_amount_to_displayable(cc->deposit, lineBuffer);
       lineBuffer[amountTextSize] = '\0';
       break;
     case 3:
       //Agent Hash
-      //snprintf(lineBuffer, 50, "%.*X", txContext.tx_fields.join_consensus.agentHash);
+      //snprintf(lineBuffer, 50, "%.*X", cc->agentHash);
       //os_memmove(lineBuffer + 46, "...\0", 4);
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, txContext.tx_fields.join_consensus.agentHash,
-              8, txContext.tx_fields.join_consensus.agentHash + HASH_LENGTH - 8);
+              8, cc->agentHash,
+              8, cc->agentHash + HASH_LENGTH - 8);
       break;
     case 4:
       //Remark
@@ -93,12 +94,12 @@ void tx_parse_specific_5_join_consensus() {
       txContext.tx_parsing_state = _5_JOIN_CONS_DEPOSIT;
       PRINTF("-- _5_JOIN_CONS_DEPOSIT\n");
       is_available_to_parse(AMOUNT_LENGTH);
-      nuls_swap_bytes(txContext.tx_fields.join_consensus.deposit, txContext.bufferPointer, AMOUNT_LENGTH);
+      nuls_swap_bytes(cc->deposit, txContext.bufferPointer, AMOUNT_LENGTH);
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, txContext.tx_fields.join_consensus.deposit);
+      PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, cc->deposit);
 
       // - Check here that deposit is more than Min Deposit
-      if(nuls_secure_memcmp(txContext.tx_fields.join_consensus.deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH) < 0) {
+      if(nuls_secure_memcmp(cc->deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH) < 0) {
         // PRINTF(("Number of output is wrong. Only 1 normal output and must be a black hole)\n"));
         THROW(INVALID_PARAMETER);
       }
@@ -108,12 +109,12 @@ void tx_parse_specific_5_join_consensus() {
       PRINTF("-- _5_JOIN_CONS_ADDRESS\n");
       is_available_to_parse(ADDRESS_LENGTH);
       //Save the address
-      os_memmove(txContext.tx_fields.join_consensus.address, txContext.bufferPointer, ADDRESS_LENGTH);
+      os_memmove(cc->address, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("address: %.*H\n", ADDRESS_LENGTH, txContext.tx_fields.join_consensus.address);
+      PRINTF("address: %.*H\n", ADDRESS_LENGTH, cc->address);
 
       // - Check here that address is the same as accountFrom
-      if(nuls_secure_memcmp(reqContext.accountFrom.address, txContext.tx_fields.join_consensus.address, ADDRESS_LENGTH) != 0) {
+      if(nuls_secure_memcmp(reqContext.accountFrom.address, cc->address, ADDRESS_LENGTH) != 0) {
         // PRINTF(("Deposit address is different from account provided in input!\n"));
         THROW(INVALID_PARAMETER);
       }
@@ -122,9 +123,9 @@ void tx_parse_specific_5_join_consensus() {
       txContext.tx_parsing_state = _5_JOIN_CONS_AGENTHASH;
       PRINTF("-- _5_JOIN_CONS_AGENTHASH\n");
       is_available_to_parse(HASH_LENGTH);
-      os_memmove(txContext.tx_fields.join_consensus.agentHash, txContext.bufferPointer, HASH_LENGTH);
+      os_memmove(cc->agentHash, txContext.bufferPointer, HASH_LENGTH);
       transaction_offset_increase(HASH_LENGTH);
-      PRINTF("agentHash: %.*H\n", HASH_LENGTH, txContext.tx_fields.join_consensus.agentHash);
+      PRINTF("agentHash: %.*H\n", HASH_LENGTH, cc->agentHash);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -148,7 +149,7 @@ void tx_finalize_5_join_consensus() {
   }
 
   //Stake (We reuse amount Spent)
-  if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, txContext.tx_fields.join_consensus.deposit)) {
+  if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, cc->deposit)) {
     PRINTF(("AmountSpent not consistent\n"));
     THROW(INVALID_PARAMETER);
   }

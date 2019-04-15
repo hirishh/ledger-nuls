@@ -20,7 +20,6 @@ static const bagl_element_t ui_102_delete_contract_nano[] = {
   LINEBUFFER,
 };
 
-
 static uint8_t stepProcessor_102_delete_contract(uint8_t step) {
   uint8_t nextStep = step + 1;
   if(step == 2 && txContext.remarkSize == 0) {
@@ -29,9 +28,10 @@ static uint8_t stepProcessor_102_delete_contract(uint8_t step) {
   return nextStep;
 }
 
+static tx_type_specific_102_delete_contract_t *cc = &(txContext.tx_fields.delete_contract);
+
 static void uiProcessor_102_delete_contract(uint8_t step) {
   unsigned short amountTextSize;
-  tx_type_specific_102_delete_contract_t *cc = &(txContext.tx_fields.delete_contract);
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
@@ -69,7 +69,6 @@ void tx_parse_specific_102_delete_contract() {
    *
    * */
 
-  tx_type_specific_102_delete_contract_t *cc = &(txContext.tx_fields.delete_contract);
   uint64_t tmpVarInt;
 
   //NB: There are no break in this switch. This is intentional.

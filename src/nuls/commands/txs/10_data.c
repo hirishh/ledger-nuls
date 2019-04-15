@@ -20,7 +20,6 @@ static const bagl_element_t ui_10_data_nano[] = {
   LINEBUFFER,
 };
 
-
 static uint8_t stepProcessor_10_data(uint8_t step) {
   uint8_t nextStep = step + 1;
   if(step == 2 && txContext.remarkSize == 0) {
@@ -28,6 +27,8 @@ static uint8_t stepProcessor_10_data(uint8_t step) {
   }
   return nextStep;
 }
+
+static tx_type_specific_10_data_t *cc = &(txContext.tx_fields.data);
 
 static void uiProcessor_10_data(uint8_t step) {
   unsigned short amountTextSize;
@@ -40,11 +41,11 @@ static void uiProcessor_10_data(uint8_t step) {
       break;
     case 2:
       //Data Hash
-      //snprintf(lineBuffer, 50, "%.*X", txContext.tx_fields.data.digest);
+      //snprintf(lineBuffer, 50, "%.*X", cc->digest);
       //os_memmove(lineBuffer + 46, "...\0", 4);
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, txContext.tx_fields.data.digest,
-              8, txContext.tx_fields.data.digest + DIGEST_LENGTH - 8);
+              8, cc->digest,
+              8, cc->digest + DIGEST_LENGTH - 8);
       break;
     case 3:
       //Remark
@@ -78,40 +79,40 @@ void tx_parse_specific_10_data() {
     case BEGINNING:
       PRINTF("-- BEGINNING\n");
       //init sha256
-      cx_sha256_init(&txContext.tx_fields.data.hash);
+      cx_sha256_init(&cc->hash);
 
     case _10_DATA_TXHASH_LENGTH:
       txContext.tx_parsing_state = _10_DATA_TXHASH_LENGTH;
       PRINTF("-- _10_DATA_TXHASH_LENGTH\n");
-      txContext.tx_fields.data.size = transaction_get_varint();
-      txContext.tx_fields.data.sizeMissing = txContext.tx_fields.data.size;
-      PRINTF("data size: %d\n", txContext.tx_fields.data.size);
+      cc->size = transaction_get_varint();
+      cc->sizeMissing = cc->size;
+      PRINTF("data size: %d\n", cc->size);
 
     case _10_DATA_TXHASH_DATA:
       txContext.tx_parsing_state = _10_DATA_TXHASH_DATA;
       PRINTF("-- _10_DATA_TXHASH_DATA\n");
-      PRINTF("Missing Data: %d\n", txContext.tx_fields.data.sizeMissing);
+      PRINTF("Missing Data: %d\n", cc->sizeMissing);
       PRINTF("Current Chunk Size: %d\n", txContext.bytesChunkRemaining);
 
-      tmpVarInt = MIN(txContext.tx_fields.data.sizeMissing, txContext.bytesChunkRemaining);
-      cx_hash(&txContext.tx_fields.data.hash.header, 0,
+      tmpVarInt = MIN(cc->sizeMissing, txContext.bytesChunkRemaining);
+      cx_hash(&cc->hash.header, 0,
               txContext.bufferPointer, tmpVarInt, NULL, 0);
-      txContext.tx_fields.data.sizeMissing -= tmpVarInt;
+      cc->sizeMissing -= tmpVarInt;
       transaction_offset_increase(tmpVarInt);
 
       //Check if we need next chunk
-      if(txContext.bytesChunkRemaining == 0 && txContext.tx_fields.data.sizeMissing != 0) {
+      if(txContext.bytesChunkRemaining == 0 && cc->sizeMissing != 0) {
         PRINTF("dataSizeMissing is not 0 - we need next chunk.\n");
         THROW(NEED_NEXT_CHUNK);
       }
 
-      if(txContext.tx_fields.data.sizeMissing == 0) {
+      if(cc->sizeMissing == 0) {
         PRINTF("dataSizeMissing is 0 - let's finalize the data hash\n");
         //let's finalize the hash
         unsigned char fake[1];
-        cx_hash(&txContext.tx_fields.data.hash.header, CX_LAST, fake, 0,
-                txContext.tx_fields.data.digest, DIGEST_LENGTH);
-        PRINTF("Data Digest %.*H\n", DIGEST_LENGTH, txContext.tx_fields.data.digest);
+        cx_hash(&cc->hash.header, CX_LAST, fake, 0,
+                cc->digest, DIGEST_LENGTH);
+        PRINTF("Data Digest %.*H\n", DIGEST_LENGTH, cc->digest);
 
         //It's time for CoinData
         txContext.tx_parsing_group = COIN_INPUT;

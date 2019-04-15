@@ -30,7 +30,6 @@ static const bagl_element_t ui_101_call_contract_nano[] = {
   LINEBUFFER,
 };
 
-
 static uint8_t stepProcessor_101_call_contract(uint8_t step) {
   uint8_t nextStep = step + 1;
   if(step == 7 && txContext.remarkSize == 0) {
@@ -39,9 +38,10 @@ static uint8_t stepProcessor_101_call_contract(uint8_t step) {
   return nextStep;
 }
 
+static tx_type_specific_101_call_contract_t *cc = &(txContext.tx_fields.call_contract);
+
 static void uiProcessor_101_call_contract(uint8_t step) {
   unsigned short amountTextSize;
-  tx_type_specific_101_call_contract_t *cc = &(txContext.tx_fields.call_contract);
   os_memset(lineBuffer, 0, 50);
   switch (step) {
     case 1:
@@ -118,7 +118,6 @@ void tx_parse_specific_101_call_contract() {
    *
    * */
 
-  tx_type_specific_101_call_contract_t *cc = &(txContext.tx_fields.call_contract);
   uint64_t tmpVarInt;
 
   //NB: There are no break in this switch. This is intentional.

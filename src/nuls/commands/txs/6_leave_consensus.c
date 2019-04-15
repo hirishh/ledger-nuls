@@ -20,7 +20,6 @@ static const bagl_element_t ui_6_leave_consensus_nano[] = {
   LINEBUFFER,
 };
 
-
 static uint8_t stepProcessor_6_leave_consensus(uint8_t step) {
   uint8_t nextStep = step + 1;
   if(step == 2 && txContext.remarkSize == 0) {
@@ -28,6 +27,8 @@ static uint8_t stepProcessor_6_leave_consensus(uint8_t step) {
   }
   return nextStep;
 }
+
+static tx_type_specific_6_leave_consensus_t *cc = &(txContext.tx_fields.leave_consensus);
 
 static void uiProcessor_6_leave_consensus(uint8_t step) {
   unsigned short amountTextSize;
@@ -43,8 +44,8 @@ static void uiProcessor_6_leave_consensus(uint8_t step) {
       //snprintf(lineBuffer, 50, "%.*X", txContext.tx_fields.join_consensus.agentHash);
       //os_memmove(lineBuffer + 46, "...\0", 4);
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, txContext.tx_fields.leave_consensus.txHash,
-              8, txContext.tx_fields.leave_consensus.txHash + HASH_LENGTH - 8);
+              8, cc->txHash,
+              8, cc->txHash + HASH_LENGTH - 8);
       break;
     case 3:
       //Remark
@@ -82,9 +83,9 @@ void tx_parse_specific_6_leave_consensus() {
       txContext.tx_parsing_state = _6_LEAVE_CONS_TXHASH;
       PRINTF("-- _6_LEAVE_CONS_TXHASH\n");
       is_available_to_parse(HASH_LENGTH);
-      os_memmove(txContext.tx_fields.leave_consensus.txHash, txContext.bufferPointer, HASH_LENGTH);
+      os_memmove(cc->txHash, txContext.bufferPointer, HASH_LENGTH);
       transaction_offset_increase(HASH_LENGTH);
-      PRINTF("txHash: %.*H\n", HASH_LENGTH, txContext.tx_fields.leave_consensus.txHash);
+      PRINTF("txHash: %.*H\n", HASH_LENGTH, cc->txHash);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;

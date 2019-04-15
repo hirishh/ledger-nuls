@@ -28,7 +28,6 @@ static const bagl_element_t ui_4_register_agent_nano[] = {
   LINEBUFFER,
 };
 
-
 static uint8_t stepProcessor_4_register_agent(uint8_t step) {
   uint8_t nextStep = step + 1;
 
@@ -38,6 +37,8 @@ static uint8_t stepProcessor_4_register_agent(uint8_t step) {
 
   return nextStep;
 }
+
+static tx_type_specific_4_register_agent_t *cc = &(txContext.tx_fields.register_agent);
 
 static void uiProcessor_4_register_agent(uint8_t step) {
   unsigned short amountTextSize;
@@ -50,29 +51,29 @@ static void uiProcessor_4_register_agent(uint8_t step) {
       break;
     case 2:
       //Deposit
-      amountTextSize = nuls_hex_amount_to_displayable(txContext.tx_fields.register_agent.deposit, lineBuffer);
+      amountTextSize = nuls_hex_amount_to_displayable(cc->deposit, lineBuffer);
       lineBuffer[amountTextSize] = '\0';
       break;
     case 3:
       //Agent Address
-      nuls_address_to_encoded_base58(txContext.tx_fields.register_agent.agentAddress, lineBuffer);
+      nuls_address_to_encoded_base58(cc->agentAddress, lineBuffer);
       lineBuffer[BASE58_ADDRESS_LENGTH] = '\0';
       break;
     case 4:
       //Packaging Address
-      nuls_address_to_encoded_base58(txContext.tx_fields.register_agent.packagingAddress, lineBuffer);
+      nuls_address_to_encoded_base58(cc->packagingAddress, lineBuffer);
       lineBuffer[BASE58_ADDRESS_LENGTH] = '\0';
       break;
     case 5:
       //Reward Address
-      nuls_address_to_encoded_base58(txContext.tx_fields.register_agent.rewardAddress, lineBuffer);
+      nuls_address_to_encoded_base58(cc->rewardAddress, lineBuffer);
       lineBuffer[BASE58_ADDRESS_LENGTH] = '\0';
       break;
     case 6:
       //Commission Rate
-      //nuls_double_to_displayable(txContext.tx_fields.register_agent.commissionRate, 40, lineBuffer);
-      //snprintf(lineBuffer, 50, "%.5g percentage", txContext.tx_fields.register_agent.commissionRate);
-      nuls_int_to_string((int) txContext.tx_fields.register_agent.commissionRate, lineBuffer); //TODO Fix double on monitor
+      //nuls_double_to_displayable(cc->commissionRate, 40, lineBuffer);
+      //snprintf(lineBuffer, 50, "%.5g percentage", cc->commissionRate);
+      nuls_int_to_string((int) cc->commissionRate, lineBuffer); //TODO Fix double on monitor
       break;
     case 7:
       //Remark
@@ -108,14 +109,13 @@ void tx_parse_specific_4_register_agent() {
     case BEGINNING:
       PRINTF("-- BEGINNING\n");
 
-
     case _4_REGISTER_AGENT_DEPOSIT:
       txContext.tx_parsing_state = _4_REGISTER_AGENT_DEPOSIT;
       PRINTF("-- _4_REGISTER_AGENT_DEPOSIT\n");
       is_available_to_parse(AMOUNT_LENGTH);
-      nuls_swap_bytes(txContext.tx_fields.register_agent.deposit, txContext.bufferPointer, AMOUNT_LENGTH);
+      nuls_swap_bytes(cc->deposit, txContext.bufferPointer, AMOUNT_LENGTH);
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, txContext.tx_fields.register_agent.deposit);
+      PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, cc->deposit);
 
       // - Check here that deposit is more than Min Deposit
       if(nuls_secure_memcmp(txContext.tx_fields.join_consensus.deposit, MIN_DEPOSIT_REGISTER_AGENT, AMOUNT_LENGTH) < 0) {
@@ -127,20 +127,20 @@ void tx_parse_specific_4_register_agent() {
       txContext.tx_parsing_state = _4_REGISTER_AGENT_AGENT_ADDR;
       PRINTF("-- _4_REGISTER_AGENT_AGENT_ADDR\n");
       is_available_to_parse(ADDRESS_LENGTH);
-      os_memmove(txContext.tx_fields.register_agent.agentAddress, txContext.bufferPointer, ADDRESS_LENGTH);
+      os_memmove(cc->agentAddress, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("agentAddress: %.*H\n", ADDRESS_LENGTH, txContext.tx_fields.register_agent.agentAddress);
+      PRINTF("agentAddress: %.*H\n", ADDRESS_LENGTH, cc->agentAddress);
 
     case _4_REGISTER_AGENT_PACKING_ADDR:
       txContext.tx_parsing_state = _4_REGISTER_AGENT_PACKING_ADDR;
       PRINTF("-- _4_REGISTER_AGENT_PACKING_ADDR\n");
       is_available_to_parse(ADDRESS_LENGTH);
-      os_memmove(txContext.tx_fields.register_agent.packagingAddress, txContext.bufferPointer, ADDRESS_LENGTH);
+      os_memmove(cc->packagingAddress, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("packagingAddress: %.*H\n", ADDRESS_LENGTH, txContext.tx_fields.register_agent.packagingAddress);
+      PRINTF("packagingAddress: %.*H\n", ADDRESS_LENGTH, cc->packagingAddress);
 
       // agentAddress can not be the same as packingAddress
-      if(nuls_secure_memcmp(txContext.tx_fields.register_agent.agentAddress, txContext.tx_fields.register_agent.packagingAddress, ADDRESS_LENGTH) == 0) {
+      if(nuls_secure_memcmp(cc->agentAddress, cc->packagingAddress, ADDRESS_LENGTH) == 0) {
         PRINTF(("agentAddress can not be the same as packingAddress!\n"));
         THROW(INVALID_PARAMETER);
       }
@@ -149,22 +149,22 @@ void tx_parse_specific_4_register_agent() {
       txContext.tx_parsing_state = _4_REGISTER_AGENT_REWARD_ADDR;
       PRINTF("-- _4_REGISTER_AGENT_REWARD_ADDR\n");
       is_available_to_parse(ADDRESS_LENGTH);
-      os_memmove(txContext.tx_fields.register_agent.rewardAddress, txContext.bufferPointer, ADDRESS_LENGTH);
+      os_memmove(cc->rewardAddress, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("rewardAddress: %.*H\n", ADDRESS_LENGTH, txContext.tx_fields.register_agent.rewardAddress);
+      PRINTF("rewardAddress: %.*H\n", ADDRESS_LENGTH, cc->rewardAddress);
 
     case _4_REGISTER_AGENT_COMMISSION_RATE:
       txContext.tx_parsing_state = _4_REGISTER_AGENT_COMMISSION_RATE;
       PRINTF("-- _4_REGISTER_AGENT_COMMISSION_RATE\n");
       is_available_to_parse(AMOUNT_LENGTH);
       //It's a Double LE...
-      os_memmove(&(txContext.tx_fields.register_agent.commissionRate), txContext.bufferPointer, sizeof(double));
+      os_memmove(&(cc->commissionRate), txContext.bufferPointer, sizeof(double));
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("commissionRate: %.*H\n", AMOUNT_LENGTH, &txContext.tx_fields.register_agent.commissionRate);
-      PRINTF("commissionRate: %.5g\n", txContext.tx_fields.register_agent.commissionRate);
-      PRINTF("commissionRate: %d\n", (int) txContext.tx_fields.register_agent.commissionRate);
+      PRINTF("commissionRate: %.*H\n", AMOUNT_LENGTH, &cc->commissionRate);
+      PRINTF("commissionRate: %.5g\n", cc->commissionRate);
+      PRINTF("commissionRate: %d\n", (int) cc->commissionRate);
 
-      if(txContext.tx_fields.register_agent.commissionRate < 10 || txContext.tx_fields.register_agent.commissionRate > 100) {
+      if(cc->commissionRate < 10 || cc->commissionRate > 100) {
         PRINTF(("Invalid commission rate, should be between [10, 100]\n"));
         THROW(INVALID_PARAMETER);
       }
@@ -191,7 +191,7 @@ void tx_finalize_4_register_agent() {
   }
 
   //Stake (We reuse amount Spent)
-  if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, txContext.tx_fields.join_consensus.deposit)) {
+  if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, cc->deposit)) {
     PRINTF(("AmountSpent not consistent\n"));
     THROW(INVALID_PARAMETER);
   }
