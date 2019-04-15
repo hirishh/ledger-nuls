@@ -44,8 +44,8 @@ static void uiProcessor_10_data(uint8_t step) {
       //snprintf(lineBuffer, 50, "%.*X", cc->digest);
       //os_memmove(lineBuffer + 46, "...\0", 4);
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, cc->digest,
-              8, cc->digest + DIGEST_LENGTH - 8);
+              4, cc->digest,
+              4, cc->digest + DIGEST_LENGTH - 4);
       break;
     case 3:
       //Remark

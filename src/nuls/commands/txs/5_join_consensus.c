@@ -53,8 +53,8 @@ static void uiProcessor_5_join_consensus(uint8_t step) {
       //snprintf(lineBuffer, 50, "%.*X", cc->agentHash);
       //os_memmove(lineBuffer + 46, "...\0", 4);
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, cc->agentHash,
-              8, cc->agentHash + HASH_LENGTH - 8);
+              4, cc->agentHash,
+              4, cc->agentHash + HASH_LENGTH - 4);
       break;
     case 4:
       //Remark

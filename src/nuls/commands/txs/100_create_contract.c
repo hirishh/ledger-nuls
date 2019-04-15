@@ -72,8 +72,8 @@ static void uiProcessor_100_create_contract(uint8_t step) {
     case 6:
       //Code Hash
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, cc->codeDigest,
-              8, cc->codeDigest + DIGEST_LENGTH - 8);
+              4, cc->codeDigest,
+              4, cc->codeDigest + DIGEST_LENGTH - 4);
       break;
     case 7:
       //Args

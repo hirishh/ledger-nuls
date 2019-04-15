@@ -44,8 +44,8 @@ static void uiProcessor_6_leave_consensus(uint8_t step) {
       //snprintf(lineBuffer, 50, "%.*X", txContext.tx_fields.join_consensus.agentHash);
       //os_memmove(lineBuffer + 46, "...\0", 4);
       snprintf(lineBuffer, 50, "%.*H...%.*H",
-              8, cc->txHash,
-              8, cc->txHash + HASH_LENGTH - 8);
+              4, cc->txHash,
+              4, cc->txHash + HASH_LENGTH - 4);
       break;
     case 3:
       //Remark
