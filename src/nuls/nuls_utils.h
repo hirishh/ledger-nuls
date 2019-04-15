@@ -8,10 +8,8 @@
 #include "os.h"
 #include "../io.h"
 
-
-
 /**
- * Gets a bigendian representation of the usable publicKey
+ * Gets a big-endian representation of the usable publicKey
  * @param publicKey the raw public key containing both coordinated for the elliptic curve
  * @param encoded result holder
  */
@@ -19,7 +17,7 @@ void nuls_compress_publicKey(cx_ecfp_public_key_t WIDE *publicKey, uint8_t *out_
 
 /**
  * Derive address associated to the specific publicKey.
- * @param publicKey original publicKey
+ * @param publicKey original compressed publicKey
  * @param the chainId.
  * @param the addressType.
  * @param output address in ripemid160 format.
@@ -33,12 +31,28 @@ unsigned short nuls_public_key_to_encoded_base58(
         uint8_t *out_address,
         uint8_t *out_addressBase58);
 
+/**
+ * Check if an address is P2PKH
+ * @return true if is a P2PKH address
+ */
 bool is_p2pkh_addr(uint8_t addr_type);
 
+/**
+ * Check if an address is Contract
+ * @return true if is a Contract address
+ */
 bool is_contract_addr(uint8_t addr_type);
 
+/**
+ * Check if an address is P2SH
+ * @return true if is a P2SH address
+ */
 bool is_p2sh_addr(uint8_t addr_type);
 
+/**
+ * Check if tx is a contract type (100, 101, 102)
+ * @return true if is a contract type tx
+ */
 bool is_contract_tx(uint16_t tx_type);
 
 /**
@@ -50,14 +64,14 @@ bool is_contract_tx(uint16_t tx_type);
 unsigned short nuls_address_to_encoded_base58(uint8_t WIDE *address, uint8_t *out_address);
 
 /**
- * Reads the packet for Sign requests (tx and msg), sets the reqContext and patches the packet data values by skipping the header.
+ * Reads the packet for Sign requests (tx and msg), sets the reqContext.
  * @param packet the  buffer of communication packet.
  * @return number of bytes read
  */
 uint32_t setReqContextForSign(commPacket_t *packet);
 
 /**
- * Reads the packet for getPubKey requests, sets the reqContext and patches the packet data values by skipping the header.
+ * Reads the packet for getPubKey requests, sets the reqContext.
  * @param packet the  buffer of communication packet.
  * @return number of bytes read
  */

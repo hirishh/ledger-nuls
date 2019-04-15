@@ -27,7 +27,7 @@
 #define ADDRESS_TYPE_CONTRACT 2
 #define ADDRESS_TYPE_P2SH 3
 
-#define HASH_LENGTH 34
+#define HASH_LENGTH 34 // hash (33) + index (1)
 #define ADDRESS_LENGTH 23 // chainid (2) + addressType (1) + RIPEMID160 (20)
 #define BASE58_ADDRESS_LENGTH 32
 

@@ -107,21 +107,12 @@ Data will be:
 
 Depending on the Display flag, the command will either return immediately or asynchronously after user confirmation.
 
-
-```
- 04 -> command
-   00 -> no show
-     01 -> default address
-       x -> number of paths in bip32 string
-        x*4 -> bigendian uint32 paths
-```
-
 The **result** will show chainCode, publicKey, address and  using the *Result Response Protocol*
 
 
 ### Signing (TX or Message)
 
-With the signing commands you can sign both transactions and messages.
+With the signing commands you can sign both transactions and messages. For Message, change account is ignored.
 
 **Request**
 
