@@ -13,6 +13,7 @@ void cx_hash_increase(unsigned char value);
 void transaction_offset_increase(unsigned char value);
 void is_available_to_parse(unsigned char x);
 unsigned long int transaction_get_varint(void);
+void get_address_from_owner(unsigned char *owner, unsigned long int ownerLength, unsigned char *address_out);
 
 // target = a + b
 unsigned char transaction_amount_add_be(unsigned char *target, unsigned char *a, unsigned char *b);

@@ -171,6 +171,8 @@ void parse_group_coin_output() {
     THROW(INVALID_STATE);
   }
 
+  bool isOpReturnOutput = false;
+
   do {
     switch(txContext.tx_parsing_state) {
 
@@ -195,15 +197,12 @@ void parse_group_coin_output() {
 
       case COIN_OWNER_DATA_LENGTH:
         txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
+        isOpReturnOutput = false;
         PRINTF("-- COIN_OWNER_DATA_LENGTH\n");
         PRINTF("-- remainingInputsOutputs: %d\n", txContext.remainingInputsOutputs);
         PRINTF("-- currentInputOutput: %d\n", txContext.currentInputOutput);
         txContext.currentInputOutputOwnerLength = transaction_get_varint();
         PRINTF("-- currentInputOutputOwnerLength: %d\n", txContext.currentInputOutputOwnerLength);
-        if(txContext.currentInputOutputOwnerLength != ADDRESS_LENGTH) {
-          //TODO At the moment we support only transfer to address. rawScript is not implemented
-          THROW(NOT_SUPPORTED);
-        }
 
       case COIN_DATA:
         txContext.tx_parsing_state = COIN_DATA;
@@ -215,14 +214,20 @@ void parse_group_coin_output() {
         //now we have whole output
         PRINTF("owner: %.*H\n", txContext.currentInputOutputOwnerLength, txContext.bufferPointer);
 
-        //Save the address as "toShow"
-        os_memmove(txContext.outputAddress[txContext.nOut], txContext.bufferPointer, ADDRESS_LENGTH);
-        //If address is not a P2PKH, throw an error since it's not yet supported
-        if(!is_p2pkh_addr(txContext.outputAddress[txContext.nOut][2]) && !is_contract_tx(txContext.type)) { //TODO support P2SH
-          PRINTF("Address is not a P2PKH. address_type is %d\n", txContext.outputAddress[txContext.nOut][2]);
-          THROW(INVALID_PARAMETER);
+
+        //Check if is an op_return script
+        if(is_op_return_script(txContext.bufferPointer)) {
+            PRINTF("OP Return output!");
+            isOpReturnOutput = true;
+        } else {
+            get_address_from_owner(
+                    txContext.bufferPointer,
+                    txContext.currentInputOutputOwnerLength,
+                    txContext.outputAddress[txContext.nOut]);
         }
-        transaction_offset_increase(ADDRESS_LENGTH);
+
+        //Owner
+        transaction_offset_increase(txContext.currentInputOutputOwnerLength);
         //Amount
         nuls_swap_bytes(txContext.outputAmount[txContext.nOut], txContext.bufferPointer, AMOUNT_LENGTH);
         transaction_offset_increase(AMOUNT_LENGTH);
@@ -234,36 +239,38 @@ void parse_group_coin_output() {
           THROW(EXCEPTION_OVERFLOW);
         }
 
-        PRINTF("output #%d\n", txContext.nOut);
-        PRINTF("Address:  %.*H\n", ADDRESS_LENGTH, txContext.outputAddress[txContext.nOut]);
-        PRINTF("amount: %.*H\n", AMOUNT_LENGTH, txContext.outputAmount[txContext.nOut]);
-        amountSize = nuls_hex_amount_to_displayable(txContext.outputAmount[txContext.nOut], amountStr);
-        amountStr[amountSize] = '\0';
-        PRINTF("amountStr: %s\n", amountStr);
-        PRINTF("totalOutputAmount: %.*H\n", AMOUNT_LENGTH, txContext.totalOutputAmount);
-
-        txContext.nOut++;
-
-        //Do check about changeAddress
-        //If is a change address -> remove from "txContext.outputAddress" and do "only-one" check
-        if(reqContext.accountChange.pathLength > 0) { // -> user specified accountChange in input
-
-          if(nuls_secure_memcmp(txContext.outputAddress[txContext.nOut-1], reqContext.accountChange.address, ADDRESS_LENGTH) == 0) {
-            PRINTF("It's a valid change address!\n");
-            txContext.changeFound = true;
-            //Add to changeAmount
-            if (transaction_amount_add_be(txContext.changeAmount, txContext.changeAmount, txContext.outputAmount[txContext.nOut-1])) {
-              // L_DEBUG_APP(("Input amount Overflow\n"));
-              THROW(EXCEPTION_OVERFLOW);
-            }
-            PRINTF("changeAmount: %.*H\n", AMOUNT_LENGTH, txContext.changeAmount);
-            amountSize = nuls_hex_amount_to_displayable(txContext.changeAmount, amountStr);
+        if(!isOpReturnOutput) {
+            PRINTF("output #%d\n", txContext.nOut);
+            PRINTF("Address:  %.*H\n", ADDRESS_LENGTH, txContext.outputAddress[txContext.nOut]);
+            PRINTF("amount: %.*H\n", AMOUNT_LENGTH, txContext.outputAmount[txContext.nOut]);
+            amountSize = nuls_hex_amount_to_displayable(txContext.outputAmount[txContext.nOut], amountStr);
             amountStr[amountSize] = '\0';
-            PRINTF("changeAmountStr: %s\n", amountStr);
+            PRINTF("amountStr: %s\n", amountStr);
+            PRINTF("totalOutputAmount: %.*H\n", AMOUNT_LENGTH, txContext.totalOutputAmount);
 
-            //Remove from "toShow"
-            txContext.nOut--;
-          }
+            txContext.nOut++;
+
+            //Do check about changeAddress
+            //If is a change address -> remove from "txContext.outputAddress" and do "only-one" check
+            if(reqContext.accountChange.pathLength > 0) { // -> user specified accountChange in input
+
+                if(nuls_secure_memcmp(txContext.outputAddress[txContext.nOut-1], reqContext.accountChange.address, ADDRESS_LENGTH) == 0) {
+                    PRINTF("It's a valid change address!\n");
+                    txContext.changeFound = true;
+                    //Add to changeAmount
+                    if (transaction_amount_add_be(txContext.changeAmount, txContext.changeAmount, txContext.outputAmount[txContext.nOut-1])) {
+                        PRINTF(("Input amount Overflow\n"));
+                        THROW(EXCEPTION_OVERFLOW);
+                    }
+                    PRINTF("changeAmount: %.*H\n", AMOUNT_LENGTH, txContext.changeAmount);
+                    amountSize = nuls_hex_amount_to_displayable(txContext.changeAmount, amountStr);
+                    amountStr[amountSize] = '\0';
+                    PRINTF("changeAmountStr: %s\n", amountStr);
+
+                    //Remove from "toShow"
+                    txContext.nOut--;
+                }
+            }
         }
 
         //update indexes
@@ -391,6 +398,22 @@ unsigned long int transaction_get_varint(void) {
     // L_DEBUG_APP(("Varint parsing failed\n"));
     THROW(INVALID_PARAMETER);
   }
+}
+
+void get_address_from_owner(unsigned char *owner, unsigned long int ownerLength, unsigned char *address_out) {
+    if (ownerLength == ADDRESS_LENGTH) {
+        os_memmove(address_out, owner, ADDRESS_LENGTH);
+        //If address is not a P2PKH, throw an error since it's not supported
+        if(!is_p2pkh_addr(txContext.outputAddress[txContext.nOut][2]) && !is_contract_tx(txContext.type)) {
+            PRINTF("Address is not a P2PKH. address_type is %d\n", txContext.outputAddress[txContext.nOut][2]);
+            THROW(INVALID_PARAMETER);
+        }
+    } else if (is_send_to_address_script(owner))
+        os_memmove(address_out, owner + 3, ADDRESS_LENGTH);
+    else if (is_send_to_p2sh_script(owner))
+        os_memmove(address_out, owner + 2, ADDRESS_LENGTH);
+    else
+        THROW(NOT_SUPPORTED);
 }
 
 unsigned char transaction_amount_add_be(unsigned char *target, unsigned char *a, unsigned char *b) {

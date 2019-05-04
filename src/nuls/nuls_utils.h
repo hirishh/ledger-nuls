@@ -32,6 +32,24 @@ unsigned short nuls_public_key_to_encoded_base58(
         uint8_t *out_addressBase58);
 
 /**
+ * Check if an output owner is a standard send to address script
+ * @return true if is a standard send to address script
+ */
+bool is_send_to_address_script(unsigned char *buffer);
+
+/**
+ * Check if an output owner is a standard P2SH script
+ * @return true if is a standard P2SH script
+ */
+bool is_send_to_p2sh_script(unsigned char *buffer);
+
+/**
+ * Check if an output owner is a an op return script
+ * @return true if is an op return script
+ */
+bool is_op_return_script(unsigned char *buffer);
+
+/**
  * Check if an address is P2PKH
  * @return true if is a P2PKH address
  */

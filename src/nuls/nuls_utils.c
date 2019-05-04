@@ -6,6 +6,16 @@
 #include "os.h"
 #include "cx.h"
 
+const unsigned char TX_OUTPUT_SCRIPT_ADDRESS_PRE[] = {
+        0x19, 0x76, 0xA9,
+        0x17}; // script length, OP_DUP, OP_HASH160, address length
+const unsigned char TX_OUTPUT_SCRIPT_ADDRESS_POST[] = {
+        0x88, 0xAC}; // OP_EQUALVERIFY, OP_CHECKSIG
+
+const unsigned char TX_OUTPUT_SCRIPT_P2SH_PRE[] = {
+        0x1A, 0xA9, 0x17}; // script length, OP_HASH160, address length
+const unsigned char TX_OUTPUT_SCRIPT_P2SH_POST[] = {0x87}; // OP_EQUAL
+
 
 void nuls_compress_publicKey(cx_ecfp_public_key_t WIDE *publicKey, uint8_t *out_encoded) {
   os_memmove(out_encoded, publicKey->W, 33);
@@ -32,6 +42,33 @@ uint8_t getxor(uint8_t *buffer, uint8_t length) {
   }
   return xor;
 }
+
+bool is_send_to_address_script(unsigned char *buffer) {
+    if ((os_memcmp(buffer, TX_OUTPUT_SCRIPT_ADDRESS_PRE,
+                   sizeof(TX_OUTPUT_SCRIPT_ADDRESS_PRE)) == 0) &&
+        (os_memcmp(buffer + sizeof(TX_OUTPUT_SCRIPT_ADDRESS_PRE) + ADDRESS_LENGTH,
+                   TX_OUTPUT_SCRIPT_ADDRESS_POST,
+                   sizeof(TX_OUTPUT_SCRIPT_ADDRESS_POST)) == 0)) {
+        return true;
+    }
+    return false;
+}
+
+bool is_send_to_p2sh_script(unsigned char *buffer) {
+    if ((os_memcmp(buffer, TX_OUTPUT_SCRIPT_P2SH_PRE,
+                   sizeof(TX_OUTPUT_SCRIPT_P2SH_PRE)) == 0) &&
+        (os_memcmp(buffer + sizeof(TX_OUTPUT_SCRIPT_P2SH_PRE) + ADDRESS_LENGTH,
+                   TX_OUTPUT_SCRIPT_P2SH_POST,
+                   sizeof(TX_OUTPUT_SCRIPT_P2SH_POST)) == 0)) {
+        return true;
+    }
+    return false;
+}
+
+bool is_op_return_script(unsigned char *buffer) {
+    return (buffer[1] == 0x6A); //OP_RETURN
+}
+
 
 bool is_p2pkh_addr(uint8_t addr_type) {
   return addr_type == ADDRESS_TYPE_P2PKH;
@@ -132,7 +169,7 @@ uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
   account->type = data[1];
   readCounter++;
 
-  //TODO Implement P2SH. At the moment is not supported
+  //At the moment P2SH is not supported
   if(account->type != 0x01) {
     THROW(NOT_SUPPORTED);
   }

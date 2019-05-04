@@ -111,7 +111,6 @@ enum transaction_parsing_state_e {
     _102_DELETE_CONTRACT_SENDER = 0xc0,
     _102_DELETE_CONTRACT_CADDRESS = 0xc1,
 
-    //TODO for other TXs
     /** COIN: Input & Output */
     COIN_OWNER_DATA_LENGTH = 0xf0,
     COIN_DATA = 0xf1,
