@@ -3,9 +3,6 @@
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
-/**
- * Sign with address
- */
 static const bagl_element_t ui_10_data_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Push Data From", 0x01),
@@ -77,42 +74,30 @@ void tx_parse_specific_10_data() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
       //init sha256
       cx_sha256_init(&cc->hash);
 
     case _10_DATA_TXHASH_LENGTH:
       txContext.tx_parsing_state = _10_DATA_TXHASH_LENGTH;
-      PRINTF("-- _10_DATA_TXHASH_LENGTH\n");
       cc->size = transaction_get_varint();
       cc->sizeMissing = cc->size;
-      PRINTF("data size: %d\n", cc->size);
 
     case _10_DATA_TXHASH_DATA:
       txContext.tx_parsing_state = _10_DATA_TXHASH_DATA;
-      PRINTF("-- _10_DATA_TXHASH_DATA\n");
-      PRINTF("Missing Data: %d\n", cc->sizeMissing);
-      PRINTF("Current Chunk Size: %d\n", txContext.bytesChunkRemaining);
-
       tmpVarInt = MIN(cc->sizeMissing, txContext.bytesChunkRemaining);
-      cx_hash(&cc->hash.header, 0,
-              txContext.bufferPointer, tmpVarInt, NULL, 0);
+      cx_hash(&cc->hash.header, 0, txContext.bufferPointer, tmpVarInt, NULL, 0);
       cc->sizeMissing -= tmpVarInt;
       transaction_offset_increase(tmpVarInt);
 
       //Check if we need next chunk
       if(txContext.bytesChunkRemaining == 0 && cc->sizeMissing != 0) {
-        PRINTF("dataSizeMissing is not 0 - we need next chunk.\n");
         THROW(NEED_NEXT_CHUNK);
       }
 
       if(cc->sizeMissing == 0) {
-        PRINTF("dataSizeMissing is 0 - let's finalize the data hash\n");
         //let's finalize the hash
         unsigned char fake[1];
-        cx_hash(&cc->hash.header, CX_LAST, fake, 0,
-                cc->digest, DIGEST_LENGTH);
-        PRINTF("Data Digest %.*H\n", DIGEST_LENGTH, cc->digest);
+        cx_hash(&cc->hash.header, CX_LAST, fake, 0, cc->digest, DIGEST_LENGTH);
 
         //It's time for CoinData
         txContext.tx_parsing_group = COIN_INPUT;
@@ -126,13 +111,9 @@ void tx_parse_specific_10_data() {
 }
 
 void tx_finalize_10_data() {
-  PRINTF("tx_finalize_10_data\n");
-
   //Throw if:
-
   // - changeAddress is not provided
   if(reqContext.accountChange.pathLength == 0) {
-    // PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 

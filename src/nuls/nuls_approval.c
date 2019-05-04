@@ -17,15 +17,12 @@ void touch_deny() {
 }
 
 void touch_approve() {
-  PRINTF("-- touch_approve\n");
   uint8_t signature[100] = {0};
 
   // Derive priv-pub again
   nuls_private_derive_keypair(reqContext.accountFrom.path, reqContext.accountFrom.pathLength, reqContext.accountFrom.chainCode);
 
   unsigned short signatureSize = nuls_signverify_finalhash(&private_key, 1, txContext.digest, sizeof(txContext.digest), signature, sizeof(signature));
-  PRINTF("signatureSize %d\n", signatureSize);
-  PRINTF("signature %.*H\n", signatureSize, signature);
 
   initResponse();
   addToResponse(signature, signatureSize);

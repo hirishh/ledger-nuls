@@ -3,9 +3,6 @@
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
-/**
- * Sign with address
- */
 static const bagl_element_t ui_6_leave_consensus_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Leave Consensus for", 0x01),
@@ -77,15 +74,12 @@ void tx_parse_specific_6_leave_consensus() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
 
     case _6_LEAVE_CONS_TXHASH:
       txContext.tx_parsing_state = _6_LEAVE_CONS_TXHASH;
-      PRINTF("-- _6_LEAVE_CONS_TXHASH\n");
       is_available_to_parse(HASH_LENGTH);
       os_memmove(cc->txHash, txContext.bufferPointer, HASH_LENGTH);
       transaction_offset_increase(HASH_LENGTH);
-      PRINTF("txHash: %.*H\n", HASH_LENGTH, cc->txHash);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -98,13 +92,9 @@ void tx_parse_specific_6_leave_consensus() {
 }
 
 void tx_finalize_6_leave_consensus() {
-  PRINTF("tx_finalize_6_leave_consensus\n");
-
   //Throw if:
-
   // - changeAddress is not provided
   if(reqContext.accountChange.pathLength == 0) {
-    PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 

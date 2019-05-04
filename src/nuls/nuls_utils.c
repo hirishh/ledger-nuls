@@ -97,9 +97,6 @@ unsigned short nuls_public_key_to_encoded_base58 (
   out_address[0] = chainId;
   out_address[1] = (chainId >> 8);
   out_address[2] = addressType;
-
-//  PRINTF("RAW PubKey %.*H\n", 65, &reqContext.publicKey->W);
-//  PRINTF("COMPRESSED %.*H\n", 33, compressedPublicKey);
   nuls_public_key_hash160(compressedPublicKey, 33, out_address + 3);
   return nuls_address_to_encoded_base58(out_address, out_addressBase58);
 }
@@ -109,15 +106,11 @@ unsigned short nuls_address_to_encoded_base58(
         uint8_t *out_addressBase58) {
   unsigned char tmpBuffer[24];
   os_memmove(tmpBuffer, nulsRipemid160, 23);
-  //  PRINTF("tmpbuffer0,1,2 %.*H\n", 3, tmpBuffer);
-  //  PRINTF("hash %.*H\n", 23, tmpBuffer);
   tmpBuffer[23] = getxor(tmpBuffer, 23);
-  //  PRINTF("XOR %d\n", tmpBuffer[23]);
   size_t outputLen = 32;
   if (nuls_encode_base58(tmpBuffer, 24, out_addressBase58, &outputLen) < 0) {
     THROW(EXCEPTION);
   }
-  //  PRINTF("Base58 %s\n", out_address);
   return outputLen;
 }
 
@@ -133,21 +126,6 @@ void deriveAccountAddress(local_address_t *account) {
   nuls_public_key_to_encoded_base58(account->compressedPublicKey, account->chainId,
                                     account->type, account->address, account->addressBase58);
   account->addressBase58[32] = '\0';
-}
-
-
-void printAccountInfo(local_address_t *account) {
-  PRINTF("account->pathLength %d\n", account->pathLength);
-  if(account->pathLength == 0) {
-    return;
-  }
-  PRINTF("account->type %d\n", account->type);
-  for(unsigned int i=0; i < account->pathLength; i++) {
-    PRINTF("account->path[%u] -> %u\n", i, account->path[i]^0x80000000);
-  }
-  PRINTF("account->chainId %d\n", account->chainId);
-  PRINTF("account->address %.*H\n", 23, account->address);
-  PRINTF("account->addressBase58 %s\n", account->addressBase58);
 }
 
 uint32_t extractAccountInfo(uint8_t *data, local_address_t *account) {
@@ -192,12 +170,9 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
 
   //AccountFrom
   headerBytesRead += extractAccountInfo(packet->data, &(reqContext.accountFrom));
-  printAccountInfo(&(reqContext.accountFrom));
 
   //AccountChange
   headerBytesRead += extractAccountInfo(packet->data + headerBytesRead, &(reqContext.accountChange));
-  printAccountInfo(&(reqContext.accountChange));
-
 
   //Check chainId is the same if (any) change address
   if(reqContext.accountChange.pathLength > 0 && (reqContext.accountChange.chainId != reqContext.accountFrom.chainId)) {
@@ -207,14 +182,11 @@ uint32_t setReqContextForSign(commPacket_t *packet) {
   //Data Length
   reqContext.signableContentLength = nuls_read_u32(packet->data + headerBytesRead, 1, 0);
   headerBytesRead += 4;
-  PRINTF("reqContext.signableContentLength %d\n", reqContext.signableContentLength);
   // Check signable content length if is correct
   if (reqContext.signableContentLength >= commContext.totalAmount) {
     THROW(0x6700); // INCORRECT_LENGTH
   }
 
-  PRINTF("packet->length without header %d\n", packet->length - headerBytesRead);
-  //PRINTF("packet-data %.*H\n", packet->length - headerBytesRead, &packet->data + headerBytesRead);
   return headerBytesRead;
 }
 

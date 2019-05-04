@@ -37,7 +37,6 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
 
   // if first packet with signing header
   if ( packet->first ) {
-    PRINTF("SIGN MSG - First Packet\n");
     // Reset sha256 and context
     os_memset(&reqContext, 0, sizeof(reqContext));
     os_memset(&txContext, 0, sizeof(txContext));
@@ -60,19 +59,15 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
     os_memset(varint, 0, sizeof(varint));
     varintLength = nuls_encode_varint(reqContext.signableContentLength, varint);
     cx_hash(&txContext.txHash.header, 0, varint, varintLength, NULL, 0);
-    PRINTF("headerBytesRead: %d\n", headerBytesRead);
 
     //Prepare LineBuffer to show
     os_memset(lineBuffer, 0, sizeof(lineBuffer));
     uint8_t msgDisplayLenth = MIN(50, packet->length - headerBytesRead);
-    PRINTF("msgDisplayLenth: %d\n", msgDisplayLenth);
     os_memmove(lineBuffer, packet->data + headerBytesRead, msgDisplayLenth);
-    PRINTF("1 linebuffer: %s\n", lineBuffer);
 
     if (msgDisplayLenth > 46) {
       os_memmove(lineBuffer+46, "...\0", 4);
     }
-    PRINTF("2 linebuffer: %s\n", lineBuffer);
 
     uint8_t npc = 0; //Non Printable Chars Counter
     for (uint8_t i=0; i < msgDisplayLenth; i++) {
@@ -80,7 +75,6 @@ void handleSignMessagePacket(commPacket_t *packet, commContext_t *context) {
              0 /* Printable Char */:
              1 /* Non Printable Char */;
     }
-    PRINTF("npc: %d\n", npc);
 
     // We rewrite the line buffer to <binary data> in case >= than 40% is non printable or first char is not printable.
     if ((npc*100) / msgDisplayLenth >= 40 || ! IS_PRINTABLE(lineBuffer[0])) {

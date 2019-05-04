@@ -59,8 +59,6 @@ static void ui_address(void) {
 
 void handleGetPublicKey(volatile unsigned int *flags, commPacket_t *packet) {
 
-  PRINTF("GetPublicKey Command\n");
-
   //reset contexts
   os_memset(&reqContext, 0, sizeof(reqContext));
   os_memset(&txContext, 0, sizeof(txContext));

@@ -75,29 +75,23 @@ void tx_parse_specific_102_delete_contract() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
 
     case _102_DELETE_CONTRACT_SENDER:
       txContext.tx_parsing_state = _102_DELETE_CONTRACT_SENDER;
-      PRINTF("-- _102_DELETE_CONTRACT_SENDER\n");
       is_available_to_parse(ADDRESS_LENGTH);
       os_memmove(cc->sender, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("sender: %.*H\n", ADDRESS_LENGTH, cc->sender);
 
       //Check here that sender is the same as accountFrom
       if(nuls_secure_memcmp(reqContext.accountFrom.address, cc->sender, ADDRESS_LENGTH) != 0) {
-        // PRINTF(("Deposit address is different from account provided in input!\n"));
         THROW(INVALID_PARAMETER);
       }
 
     case _102_DELETE_CONTRACT_CADDRESS:
       txContext.tx_parsing_state = _102_DELETE_CONTRACT_CADDRESS;
-      PRINTF("-- _102_DELETE_CONTRACT_CADDRESS\n");
       is_available_to_parse(ADDRESS_LENGTH);
       os_memmove(cc->contractAddress, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("contractAddress: %.*H\n", ADDRESS_LENGTH, cc->contractAddress);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -111,13 +105,9 @@ void tx_parse_specific_102_delete_contract() {
 }
 
 void tx_finalize_102_delete_contract() {
-  PRINTF("tx_finalize_102_delete_contract\n");
-
   //Throw if:
-
   // - changeAddress is not provided
   if(reqContext.accountChange.pathLength == 0) {
-    // PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 

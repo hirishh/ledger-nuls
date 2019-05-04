@@ -48,7 +48,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
   // if first packet with signing header
   if ( packet->first ) {
-    PRINTF("SIGN - First Packet\n");
     // Reset sha256 and context
     os_memset(&reqContext, 0, sizeof(reqContext));
     os_memset(&txContext, 0, sizeof(txContext));
@@ -63,8 +62,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
     txContext.type = nuls_read_u16(packet->data + headerBytesRead, 0, 0);
     txContext.totalTxBytes = reqContext.signableContentLength;
-
-    PRINTF("TYPE %d\n", txContext.type);
 
     switch (txContext.type) {
       case TX_TYPE_2_TRANSFER_TX:
@@ -108,7 +105,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         tx_end = tx_finalize_102_delete_contract;
         break;
       default:
-        PRINTF("TYPE not supported\n");
         THROW(NOT_SUPPORTED);
     }
 
@@ -116,11 +112,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
 
   //insert at beginning saveBufferForNextChunk if present
   if(txContext.saveBufferLength > 0) {
-    PRINTF("saveBufferLength handler\n");
-    PRINTF("buffer saveBufferLength: %d\n", txContext.saveBufferLength);
-    PRINTF("buffer headerBytesRead: %d\n", headerBytesRead);
-    PRINTF("buffer initial packet->length: %d\n", packet->length);
-
     //Shift TX payload (without header) of saveBufferLength bytes on the right
     os_memmove(
             packet->data + headerBytesRead + txContext.saveBufferLength,
@@ -136,10 +127,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
     packet->length += txContext.saveBufferLength;
     txContext.saveBufferLength = 0;
     os_memset(txContext.saveBufferForNextChunk, 0, sizeof(txContext.saveBufferForNextChunk));
-    PRINTF("buffer final packet->length: %d\n", packet->length);
   }
-
-  PRINTF("SIGN - Handler\n");
 
   txContext.bufferPointer = packet->data + headerBytesRead;
   txContext.bytesChunkRemaining = packet->length - headerBytesRead;
@@ -167,12 +155,10 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         }
       CATCH_OTHER(e) {
           if(e == NEED_NEXT_CHUNK) {
-            PRINTF("NEED_NEXT_CHUNK\n");
             os_memmove(txContext.saveBufferForNextChunk, txContext.bufferPointer, txContext.bytesChunkRemaining);
             txContext.saveBufferLength = txContext.bytesChunkRemaining;
           } else {
             //Unexpected Error during parsing. Let the client know
-            PRINTF("THROW\n");
             THROW(e);
           }
       }
@@ -187,7 +173,6 @@ static uint8_t default_step_processor(uint8_t cur) {
 
 
 void finalizeSignTx(volatile unsigned int *flags) {
-  PRINTF("finalizeSignTx\n");
   if(txContext.tx_parsing_group != TX_PARSED || txContext.tx_parsing_state != READY_TO_SIGN)
     THROW(INVALID_STATE);
 

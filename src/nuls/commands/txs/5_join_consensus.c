@@ -3,9 +3,6 @@
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
-/**
- * Sign with address
- */
 static const bagl_element_t ui_5_join_consensus_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Join Consensus for", 0x01),
@@ -88,44 +85,35 @@ void tx_parse_specific_5_join_consensus() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
 
     case _5_JOIN_CONS_DEPOSIT:
       txContext.tx_parsing_state = _5_JOIN_CONS_DEPOSIT;
-      PRINTF("-- _5_JOIN_CONS_DEPOSIT\n");
       is_available_to_parse(AMOUNT_LENGTH);
       nuls_swap_bytes(cc->deposit, txContext.bufferPointer, AMOUNT_LENGTH);
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, cc->deposit);
 
       // - Check here that deposit is more than Min Deposit
       if(nuls_secure_memcmp(cc->deposit, MIN_DEPOSIT_JOIN_CONSENSUS, AMOUNT_LENGTH) < 0) {
-        // PRINTF(("Number of output is wrong. Only 1 normal output and must be a black hole)\n"));
         THROW(INVALID_PARAMETER);
       }
 
     case _5_JOIN_CONS_ADDRESS:
       txContext.tx_parsing_state = _5_JOIN_CONS_ADDRESS;
-      PRINTF("-- _5_JOIN_CONS_ADDRESS\n");
       is_available_to_parse(ADDRESS_LENGTH);
       //Save the address
       os_memmove(cc->address, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("address: %.*H\n", ADDRESS_LENGTH, cc->address);
 
       // - Check here that address is the same as accountFrom
       if(nuls_secure_memcmp(reqContext.accountFrom.address, cc->address, ADDRESS_LENGTH) != 0) {
-        // PRINTF(("Deposit address is different from account provided in input!\n"));
         THROW(INVALID_PARAMETER);
       }
 
     case _5_JOIN_CONS_AGENTHASH:
       txContext.tx_parsing_state = _5_JOIN_CONS_AGENTHASH;
-      PRINTF("-- _5_JOIN_CONS_AGENTHASH\n");
       is_available_to_parse(HASH_LENGTH);
       os_memmove(cc->agentHash, txContext.bufferPointer, HASH_LENGTH);
       transaction_offset_increase(HASH_LENGTH);
-      PRINTF("agentHash: %.*H\n", HASH_LENGTH, cc->agentHash);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -138,19 +126,14 @@ void tx_parse_specific_5_join_consensus() {
 }
 
 void tx_finalize_5_join_consensus() {
-  PRINTF("tx_finalize_5_join_consensus\n");
-
   //Throw if:
-
   // - changeAddress is not provided
   if(reqContext.accountChange.pathLength == 0) {
-    PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 
   //Stake (We reuse amount Spent)
   if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, cc->deposit)) {
-    PRINTF(("AmountSpent not consistent\n"));
     THROW(EXCEPTION_OVERFLOW);
   }
 

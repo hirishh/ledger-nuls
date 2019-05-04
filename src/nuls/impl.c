@@ -39,7 +39,6 @@ bool innerProcessCommPacket(volatile unsigned int *flags, commPacket_t *lastPack
       processSignMessage(flags);
       break;
     case INS_SIGN:
-      PRINTF("innerProcessCommPacket - pre finalizeSignTx\n");
       finalizeSignTx(flags);
       break;
     default:

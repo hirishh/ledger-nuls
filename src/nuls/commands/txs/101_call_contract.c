@@ -3,9 +3,6 @@
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
-/**
- * Sign with address
- */
 static const bagl_element_t ui_101_call_contract_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Call contract from", 0x01),
@@ -124,57 +121,44 @@ void tx_parse_specific_101_call_contract() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
 
     case _101_CALL_CONTRACT_SENDER:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_SENDER;
-      PRINTF("-- _101_CALL_CONTRACT_SENDER\n");
       is_available_to_parse(ADDRESS_LENGTH);
       os_memmove(cc->sender, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("sender: %.*H\n", ADDRESS_LENGTH, cc->sender);
 
       //Check here that sender is the same as accountFrom
       if(nuls_secure_memcmp(reqContext.accountFrom.address, cc->sender, ADDRESS_LENGTH) != 0) {
-        // PRINTF(("Deposit address is different from account provided in input!\n"));
         THROW(INVALID_PARAMETER);
       }
 
     case _101_CALL_CONTRACT_CADDRESS:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_CADDRESS;
-      PRINTF("-- _101_CALL_CONTRACT_CADDRESS\n");
       is_available_to_parse(ADDRESS_LENGTH);
       os_memmove(cc->contractAddress, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("contractAddress: %.*H\n", ADDRESS_LENGTH, cc->contractAddress);
 
     case _101_CALL_CONTRACT_VALUE:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_VALUE;
-      PRINTF("-- _101_CALL_CONTRACT_VALUE\n");
       is_available_to_parse(AMOUNT_LENGTH);
       nuls_swap_bytes(cc->value, txContext.bufferPointer, AMOUNT_LENGTH);
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("value: %.*H\n", AMOUNT_LENGTH, cc->value);
 
     case _101_CALL_CONTRACT_GASLIMIT:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_GASLIMIT;
-      PRINTF("-- _101_CALL_CONTRACT_GASLIMIT\n");
       is_available_to_parse(AMOUNT_LENGTH);
       nuls_swap_bytes(cc->gasLimit, txContext.bufferPointer, AMOUNT_LENGTH);
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("gasLimit: %.*H\n", AMOUNT_LENGTH, cc->gasLimit);
 
     case _101_CALL_CONTRACT_PRICE:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_PRICE;
-      PRINTF("-- _101_CALL_CONTRACT_PRICE\n");
       is_available_to_parse(AMOUNT_LENGTH);
       nuls_swap_bytes(cc->price, txContext.bufferPointer, AMOUNT_LENGTH);
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("price: %.*H\n", AMOUNT_LENGTH, cc->price);
 
     case _101_CALL_CONTRACT_METHODNAME_LENGTH:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_METHODNAME_LENGTH;
-      PRINTF("-- _101_CALL_CONTRACT_METHODNAME_LENGTH\n");
       cc->methodNameSize = transaction_get_varint();
 
       if(cc->methodNameSize > MAX_METHODNAME_LENGTH) {
@@ -183,22 +167,17 @@ void tx_parse_specific_101_call_contract() {
 
     case _101_CALL_CONTRACT_METHODNAME:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_METHODNAME;
-      PRINTF("-- _101_CALL_CONTRACT_METHODNAME\n");
       is_available_to_parse(cc->methodNameSize);
       os_memmove(cc->methodName, txContext.bufferPointer, cc->methodNameSize);
       cc->methodName[cc->methodNameSize] = '\0';
       transaction_offset_increase(cc->methodNameSize);
-      PRINTF("methodName: %s\n", cc->methodName);
 
     case _101_CALL_CONTRACT_METHODDESC_LENGTH:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_METHODDESC_LENGTH;
-      PRINTF("-- _101_CALL_CONTRACT_METHODDESC_LENGTH\n");
       tmpVarInt = transaction_get_varint();
 
     case _101_CALL_CONTRACT_METHODDESC:
       txContext.tx_parsing_state = _101_CALL_CONTRACT_METHODDESC;
-      PRINTF("-- _101_CALL_CONTRACT_METHODDESC\n");
-      //is_available_to_parse(tmpVarInt);
       transaction_offset_increase(tmpVarInt);
 
     case _101_CALL_CONTRACT_ARGS_I:
@@ -218,36 +197,27 @@ void tx_parse_specific_101_call_contract() {
 
       case _101_CALL_CONTRACT_ARGS_I:
         txContext.tx_parsing_state = _101_CALL_CONTRACT_ARGS_I;
-        PRINTF("-- _101_CALL_CONTRACT_ARGS_I\n");
         is_available_to_parse(1);
         cc->arg_i = txContext.bufferPointer[0];
         cc->curr_i = 0;
         transaction_offset_increase(1);
-        PRINTF("-- args i: %d\n", cc->arg_i);
 
       case _101_CALL_CONTRACT_ARGS_J:
         txContext.tx_parsing_state = _101_CALL_CONTRACT_ARGS_J;
-        PRINTF("-- _101_CALL_CONTRACT_ARGS_J\n");
         is_available_to_parse(1);
         cc->arg_j = txContext.bufferPointer[0];
         cc->curr_j = 0;
         transaction_offset_increase(1);
-        PRINTF("-- args j: %d\n", cc->arg_j);
 
       case _101_CALL_CONTRACT_ARG_LENGTH:
         txContext.tx_parsing_state = _101_CALL_CONTRACT_ARG_LENGTH;
-        PRINTF("-- _101_CALL_CONTRACT_ARG_LENGTH\n");
         cc->argLength = transaction_get_varint();
-        PRINTF("-- args [%d][%d] length: %d\n", cc->curr_i, cc->curr_j, (unsigned char) cc->argLength);
 
       case _101_CALL_CONTRACT_ARG:
         txContext.tx_parsing_state = _101_CALL_CONTRACT_ARG;
-        PRINTF("-- _101_CALL_CONTRACT_ARG\n");
         is_available_to_parse(cc->argLength);
 
         char charToVideo = MIN(50 - cc->argsSize - 3, cc->argLength); // -3 because of ", \0" at the end
-        PRINTF("-- charToVideo: %d\n", charToVideo);
-        PRINTF("-- current argSize: %d\n", cc->argsSize);
         if(charToVideo > 0 && cc->argsSize < ( 50 - charToVideo )) {
           //if cc->argsSize is not 0, remove \0
           if(cc->argsSize > 0) cc->argsSize--;
@@ -260,8 +230,6 @@ void tx_parse_specific_101_call_contract() {
         }
 
         transaction_offset_increase(cc->argLength);
-        PRINTF("-- temp arg display: %s\n", cc->args);
-
 
         //Calculate next state
         txContext.tx_parsing_state = _101_CALL_CONTRACT_ARG_LENGTH;
@@ -270,10 +238,6 @@ void tx_parse_specific_101_call_contract() {
           txContext.tx_parsing_state = _101_CALL_CONTRACT_ARGS_J;
           cc->curr_i++;
         }
-        PRINTF("-- arg_i: %d\n", cc->arg_i);
-        PRINTF("-- curr_i: %d\n", cc->curr_i);
-        PRINTF("-- arg_j: %d\n", cc->arg_j);
-        PRINTF("-- curr_j: %d\n", cc->curr_j);
         break;
 
       default:
@@ -284,21 +248,15 @@ void tx_parse_specific_101_call_contract() {
   }
   while (cc->curr_i < cc->arg_i);
 
-  PRINTF("-- OUT FROM tx_parse_specific_101_call_contract\n");
-
   //It's time for CoinData
   txContext.tx_parsing_group = COIN_INPUT;
   txContext.tx_parsing_state = BEGINNING;
 }
 
 void tx_finalize_101_call_contract() {
-  PRINTF("tx_finalize_101_call_contract\n");
-
   //Throw if:
-
   // - changeAddress is not provided
   if(reqContext.accountChange.pathLength == 0) {
-    PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 

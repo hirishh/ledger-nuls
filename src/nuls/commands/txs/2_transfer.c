@@ -3,9 +3,6 @@
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
-/**
- * Sign with address
- */
 static const bagl_element_t ui_2_transfer_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Send from", 0x01),
@@ -83,18 +80,17 @@ void tx_parse_specific_2_transfer() {
    *
    * */
 
+  uint32_t placeholder = 0;
+
   //NB: There are no break in this switch. This is intentional.
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
 
     case PLACEHOLDER:
       txContext.tx_parsing_state = PLACEHOLDER;
-      PRINTF("-- PLACEHOLDER\n");
       is_available_to_parse(4);
       uint32_t placeholder = nuls_read_u32(txContext.bufferPointer, 1, 0);
-      PRINTF("placeholder %.*H\n", 4, &placeholder);
       if(placeholder != 0xFFFFFFFF)
         THROW(INVALID_PARAMETER);
       transaction_offset_increase(4);
@@ -110,16 +106,12 @@ void tx_parse_specific_2_transfer() {
 }
 
 void tx_finalize_2_transfer() {
-  PRINTF("tx_finalize_2_transfer\n");
-
   os_memmove(txContext.amountSpent, txContext.totalOutputAmount, AMOUNT_LENGTH);
   if(txContext.changeFound) {
     if (transaction_amount_sub_be(txContext.amountSpent, txContext.amountSpent, txContext.changeAmount)) {
-      // L_DEBUG_APP(("AmountSpent amount not consistent\n"));
       THROW(EXCEPTION_OVERFLOW);
     }
   }
-  PRINTF("amountSpent: %.*H\n", AMOUNT_LENGTH, txContext.amountSpent);
 
   ux.elements = ui_2_transfer_nano;
   ux.elements_count = 13;

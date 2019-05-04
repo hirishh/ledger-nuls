@@ -3,9 +3,6 @@
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
-/**
- * Sign with address
- */
 static const bagl_element_t ui_4_register_agent_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Register Agent from", 0x01),
@@ -107,65 +104,49 @@ void tx_parse_specific_4_register_agent() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
 
     case _4_REGISTER_AGENT_DEPOSIT:
       txContext.tx_parsing_state = _4_REGISTER_AGENT_DEPOSIT;
-      PRINTF("-- _4_REGISTER_AGENT_DEPOSIT\n");
       is_available_to_parse(AMOUNT_LENGTH);
       nuls_swap_bytes(cc->deposit, txContext.bufferPointer, AMOUNT_LENGTH);
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("deposit: %.*H\n", AMOUNT_LENGTH, cc->deposit);
 
       // - Check here that deposit is more than Min Deposit
       if(nuls_secure_memcmp(txContext.tx_fields.join_consensus.deposit, MIN_DEPOSIT_REGISTER_AGENT, AMOUNT_LENGTH) < 0) {
-        PRINTF(("Invalid deposit, should be equal or greater than 20000 nuls)\n"));
         THROW(INVALID_PARAMETER);
       }
 
     case _4_REGISTER_AGENT_AGENT_ADDR:
       txContext.tx_parsing_state = _4_REGISTER_AGENT_AGENT_ADDR;
-      PRINTF("-- _4_REGISTER_AGENT_AGENT_ADDR\n");
       is_available_to_parse(ADDRESS_LENGTH);
       os_memmove(cc->agentAddress, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("agentAddress: %.*H\n", ADDRESS_LENGTH, cc->agentAddress);
 
     case _4_REGISTER_AGENT_PACKING_ADDR:
       txContext.tx_parsing_state = _4_REGISTER_AGENT_PACKING_ADDR;
-      PRINTF("-- _4_REGISTER_AGENT_PACKING_ADDR\n");
       is_available_to_parse(ADDRESS_LENGTH);
       os_memmove(cc->packagingAddress, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("packagingAddress: %.*H\n", ADDRESS_LENGTH, cc->packagingAddress);
 
       // agentAddress can not be the same as packingAddress
       if(nuls_secure_memcmp(cc->agentAddress, cc->packagingAddress, ADDRESS_LENGTH) == 0) {
-        PRINTF(("agentAddress can not be the same as packingAddress!\n"));
         THROW(INVALID_PARAMETER);
       }
 
     case _4_REGISTER_AGENT_REWARD_ADDR:
       txContext.tx_parsing_state = _4_REGISTER_AGENT_REWARD_ADDR;
-      PRINTF("-- _4_REGISTER_AGENT_REWARD_ADDR\n");
       is_available_to_parse(ADDRESS_LENGTH);
       os_memmove(cc->rewardAddress, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
-      PRINTF("rewardAddress: %.*H\n", ADDRESS_LENGTH, cc->rewardAddress);
 
     case _4_REGISTER_AGENT_COMMISSION_RATE:
       txContext.tx_parsing_state = _4_REGISTER_AGENT_COMMISSION_RATE;
-      PRINTF("-- _4_REGISTER_AGENT_COMMISSION_RATE\n");
       is_available_to_parse(AMOUNT_LENGTH);
       //It's a Double LE...
       os_memmove(&(cc->commissionRate), txContext.bufferPointer, sizeof(double));
       transaction_offset_increase(AMOUNT_LENGTH);
-      PRINTF("commissionRate: %.*H\n", AMOUNT_LENGTH, &cc->commissionRate);
-      PRINTF("commissionRate: %.5g\n", cc->commissionRate);
-      PRINTF("commissionRate: %d\n", (int) cc->commissionRate);
 
       if(cc->commissionRate < 10 || cc->commissionRate > 100) {
-        PRINTF(("Invalid commission rate, should be between [10, 100]\n"));
         THROW(INVALID_PARAMETER);
       }
 
@@ -180,19 +161,14 @@ void tx_parse_specific_4_register_agent() {
 }
 
 void tx_finalize_4_register_agent() {
-  PRINTF("tx_finalize_4_register_agent\n");
-
   //Throw if:
-
   // - changeAddress is not provided
   if(reqContext.accountChange.pathLength == 0) {
-    PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 
   //Stake (We reuse amount Spent)
   if (transaction_amount_add_be(txContext.amountSpent, txContext.amountSpent, cc->deposit)) {
-    PRINTF(("AmountSpent not consistent\n"));
     THROW(EXCEPTION_OVERFLOW);
   }
 

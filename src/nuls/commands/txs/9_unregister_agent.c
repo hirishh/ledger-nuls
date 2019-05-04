@@ -3,9 +3,6 @@
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
-/**
- * Sign with address
- */
 static const bagl_element_t ui_9_unregister_agent_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Unregister Agent for", 0x01),
@@ -77,15 +74,12 @@ void tx_parse_specific_9_unregister_agent() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
 
     case _9_UNREGISTER_AGENT_TXHASH:
       txContext.tx_parsing_state = _9_UNREGISTER_AGENT_TXHASH;
-      PRINTF("-- _9_UNREGISTER_AGENT_TXHASH\n");
       is_available_to_parse(HASH_LENGTH);
       os_memmove(cc->txHash, txContext.bufferPointer, HASH_LENGTH);
       transaction_offset_increase(HASH_LENGTH);
-      PRINTF("txHash: %.*H\n", HASH_LENGTH, cc->txHash);
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -98,13 +92,9 @@ void tx_parse_specific_9_unregister_agent() {
 }
 
 void tx_finalize_9_unregister_agent() {
-  PRINTF("tx_finalize_9_unregister_agent\n");
-
   //Throw if:
-
   // - changeAddress is not provided
   if(reqContext.accountChange.pathLength == 0) {
-    PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 

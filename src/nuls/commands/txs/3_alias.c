@@ -3,9 +3,6 @@
 #include "../signTx.h"
 #include "../../nuls_internals.h"
 
-/**
- * Sign with address
- */
 static const bagl_element_t ui_3_alias_nano[] = {
   CLEAN_SCREEN,
   TITLE_ITEM("Alias for address", 0x01),
@@ -75,11 +72,9 @@ void tx_parse_specific_3_alias() {
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
-      PRINTF("-- BEGINNING\n");
 
     case _3_ALIAS_ADDRESS_LENGTH:
       txContext.tx_parsing_state = _3_ALIAS_ADDRESS_LENGTH;
-      PRINTF("-- 3_ALIAS_ADDRESS_LENGTH\n");
       tmpVarInt = transaction_get_varint();
       if(tmpVarInt != ADDRESS_LENGTH) {
         THROW(INVALID_PARAMETER);
@@ -87,9 +82,7 @@ void tx_parse_specific_3_alias() {
 
     case _3_ALIAS_ADDRESS:
       txContext.tx_parsing_state = _3_ALIAS_ADDRESS;
-      PRINTF("-- 3_ALIAS_ADDRESS\n");
       is_available_to_parse(ADDRESS_LENGTH);
-      PRINTF("address: %.*H\n", ADDRESS_LENGTH, txContext.bufferPointer);
       //Save the address
       os_memmove(cc->address, txContext.bufferPointer, ADDRESS_LENGTH);
       transaction_offset_increase(ADDRESS_LENGTH);
@@ -97,7 +90,6 @@ void tx_parse_specific_3_alias() {
 
     case _3_ALIAS_ALIAS_LENGTH:
       txContext.tx_parsing_state = _3_ALIAS_ALIAS_LENGTH;
-      PRINTF("-- 3_ALIAS_ALIAS_LENGTH\n");
       tmpVarInt = transaction_get_varint();
       if(tmpVarInt > MAX_ALIAS_LENGTH || tmpVarInt == 0) {
         THROW(INVALID_PARAMETER);
@@ -106,13 +98,10 @@ void tx_parse_specific_3_alias() {
 
     case _3_ALIAS_ALIAS:
       txContext.tx_parsing_state = _3_ALIAS_ALIAS;
-      PRINTF("-- 3_ALIAS_ALIAS\n");
       is_available_to_parse(cc->aliasSize);
-      PRINTF("alias: %.*H\n", cc->aliasSize, txContext.bufferPointer);
       //Save the alias
       os_memmove(cc->alias, txContext.bufferPointer, cc->aliasSize);
       cc->alias[cc->aliasSize] = '\0';
-      PRINTF("aliasStr: %s\n", cc->alias);
       transaction_offset_increase(cc->aliasSize);
 
       //It's time for CoinData
@@ -126,46 +115,30 @@ void tx_parse_specific_3_alias() {
 }
 
 void tx_finalize_3_alias() {
-  PRINTF("tx_finalize_3_alias\n");
-
   //Throw if:
-
   // - changeAddress is not provided
   if(reqContext.accountChange.pathLength == 0) {
-    PRINTF(("Change not provided!\n"));
     THROW(INVALID_PARAMETER);
   }
 
   // - addressFrom is different from alias.address
   if(nuls_secure_memcmp(reqContext.accountFrom.address, cc->address, ADDRESS_LENGTH) != 0) {
-    // PRINTF(("Alias address is different from account provided in input!\n"));
     THROW(INVALID_PARAMETER);
   }
 
-  PRINTF("tx_finalize_3_alias - nOut %d\n", txContext.nOut);
-  PRINTF("tx_finalize_3_alias - txContext.outputAddress %.*H\n", ADDRESS_LENGTH, txContext.outputAddress[0]);
-  PRINTF("tx_finalize_3_alias - BLACK_HOLE_ADDRESS %.*H\n", ADDRESS_LENGTH, BLACK_HOLE_ADDRESS);
-  PRINTF("tx_finalize_3_alias - txContext.outputAmount %.*H\n", AMOUNT_LENGTH, txContext.outputAmount[0]);
-  PRINTF("tx_finalize_3_alias - BLACK_HOLE_ALIAS_AMOUNT %.*H\n", AMOUNT_LENGTH, BLACK_HOLE_ALIAS_AMOUNT);
-  PRINTF("tx_finalize_3_alias - nuls_secure_memcmp address %d\n", nuls_secure_memcmp(txContext.outputAddress[0], BLACK_HOLE_ADDRESS, ADDRESS_LENGTH));
-  PRINTF("tx_finalize_3_alias - nuls_secure_memcmp amount %d\n", nuls_secure_memcmp(txContext.outputAmount[0], BLACK_HOLE_ALIAS_AMOUNT, AMOUNT_LENGTH));
-
   // - should be only 1 output (excluding the change one) and it's a blackhole output with specific amount of 1 Nuls
   if(txContext.nOut != 1) {
-    PRINTF(("Number of output is wrong. Only 1 normal output and must be a black hole)\n"));
     THROW(INVALID_PARAMETER);
   }
   if(
       (txContext.nOut == 1 && nuls_secure_memcmp(txContext.outputAddress[0], BLACK_HOLE_ADDRESS, ADDRESS_LENGTH) != 0) ||
       (txContext.nOut == 1 && nuls_secure_memcmp(txContext.outputAmount[0], BLACK_HOLE_ALIAS_AMOUNT, AMOUNT_LENGTH) != 0)
     ) {
-    PRINTF(("Blackhole output is not corret (wrong address or amount)\n"));
     THROW(INVALID_PARAMETER);
   }
 
   //Add blackhole output amount to fees
   if (transaction_amount_add_be(txContext.fees, txContext.fees, txContext.outputAmount[0])) {
-    PRINTF(("Fee amount not consistent - blackhole\n"));
     THROW(EXCEPTION_OVERFLOW);
   }
 
