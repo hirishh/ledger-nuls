@@ -33,7 +33,7 @@ APP_LOAD_PARAMS =--appFlags 0x40 --targetVersion "" --curve secp256k1 $(COMMON_L
 
 COIN = "Nuls"
 APPNAME = "Nuls"
-APP_LOAD_PARAMS += --path "44'/8964'" --path "44'/261'"
+APP_LOAD_PARAMS += --path "44'/8964'" --path "44'/261'" --targetId 0x33000004
 NVRAM_MAX = 0
 
 
@@ -76,6 +76,7 @@ ifneq ($(BOLOS_ENV),)
 $(info BOLOS_ENV=$(BOLOS_ENV))
 CLANGPATH := $(BOLOS_ENV)/clang-arm-fropi/bin/
 GCCPATH := $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/bin/
+CFLAGS += -idirafter $(BOLOS_ENV)/gcc-arm-none-eabi-5_3-2016q1/arm-none-eabi/include
 else
 $(info BOLOS_ENV is not set: falling back to CLANGPATH and GCCPATH)
 endif
@@ -98,6 +99,8 @@ LDLIBS += -lm -lgcc -lc
 
 # import rules to compile glyphs(/pone)
 include $(BOLOS_SDK)/Makefile.glyphs
+
+$(info CFLAGS=$(CFLAGS))
 
 # Main rules
 
