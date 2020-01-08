@@ -20,7 +20,7 @@ const ux_menu_entry_t menu_main[] = {
 
 const ux_menu_entry_t menu_about[] = {
   {NULL, NULL, 0, NULL, "Version", APPVERSION, 0, 0},
-  {NULL, NULL, 0, NULL, "Developer", "hirish", 0, 0},
+  {NULL, NULL, 0, NULL, "Developer", "Ray&hirishh", 0, 0},
   {menu_main, NULL, 2, &C_icon_back, "Back", NULL, 61, 40},
   UX_MENU_END
 };
