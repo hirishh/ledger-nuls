@@ -34,7 +34,7 @@ APP_LOAD_PARAMS =--appFlags 0x40 --targetVersion "" --curve secp256k1 $(COMMON_L
 COIN = "Nuls"
 APPNAME = "Nuls"
 #override APP_LOAD_PARAMS :=$(filter-out --targetId,$(APP_LOAD_PARAMS))
-APP_LOAD_PARAMS += --path "44'/8964'" --path "44'/261'" #--targetId 0x33000004
+APP_LOAD_PARAMS += --path "44'/8964'" --path "44'/1'" --path "44'/261'" #--targetId 0x33000004
 NVRAM_MAX = 0
 
 
