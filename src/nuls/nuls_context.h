@@ -19,6 +19,7 @@ typedef struct local_address {
     uint8_t type;
     uint8_t address[23];
     uint8_t addressBase58[33];
+    uint8_t addressWithPrefix[40];
 } local_address_t;
 
 typedef struct request_context {

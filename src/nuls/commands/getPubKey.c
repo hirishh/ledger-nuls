@@ -15,6 +15,8 @@ static const bagl_element_t verify_address_ui[] = {
  * It returns both publicKey and derived Address
  */
 static void createPublicKeyResponse() {
+  uint8_t prefixLen = 5;
+  
   initResponse();
 
   //ChainCode
@@ -23,8 +25,15 @@ static void createPublicKeyResponse() {
   //PubKey
   addToResponse(reqContext.accountFrom.compressedPublicKey, 33);
 
-  //Base58Address
-  addToResponse(reqContext.accountFrom.addressBase58, 32);
+  os_memset(reqContext.accountFrom.addressWithPrefix, 0, 40);
+  os_memmove(reqContext.accountFrom.addressWithPrefix, "NULSd", prefixLen);
+  if (reqContext.accountFrom.chainId != 1) {
+    prefixLen = 6;
+    os_memmove(reqContext.accountFrom.addressWithPrefix, "tNULSd", prefixLen);
+  }
+  os_memmove(reqContext.accountFrom.addressWithPrefix + prefixLen, &reqContext.accountFrom.addressBase58[0], 32);
+  //Base58Address  
+  addToResponse(reqContext.accountFrom.addressWithPrefix, 32 + prefixLen);
 }
 
 unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int button_mask_counter) {
