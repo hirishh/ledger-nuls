@@ -25,6 +25,7 @@ static void createPublicKeyResponse() {
   //PubKey
   addToResponse(reqContext.accountFrom.compressedPublicKey, 33);
 
+  //Base58Address 
   os_memset(reqContext.accountFrom.addressWithPrefix, 0, 40);
   os_memmove(reqContext.accountFrom.addressWithPrefix, "NULSd", prefixLen);
   if (reqContext.accountFrom.chainId != 1) {
@@ -32,7 +33,6 @@ static void createPublicKeyResponse() {
     os_memmove(reqContext.accountFrom.addressWithPrefix, "tNULSd", prefixLen);
   }
   os_memmove(reqContext.accountFrom.addressWithPrefix + prefixLen, &reqContext.accountFrom.addressBase58[0], 32);
-  //Base58Address  
   addToResponse(reqContext.accountFrom.addressWithPrefix, 32 + prefixLen);
 }
 

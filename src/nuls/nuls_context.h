@@ -44,8 +44,9 @@ enum transaction_parsing_group_e {
     TX_SPECIFIC = 0x01,
     COIN_INPUT = 0x02,
     COIN_OUTPUT = 0x03,
-    CHECK_SANITY_BEFORE_SIGN = 0x04,
-    TX_PARSED = 0x05
+    REMARK = 0x04,
+    CHECK_SANITY_BEFORE_SIGN = 0x05,
+    TX_PARSED = 0x06
 };
 typedef enum transaction_parsing_group_e transaction_parsing_group_t;
 
@@ -55,8 +56,10 @@ enum transaction_parsing_state_e {
     /** Commmon Fields */
     FIELD_TYPE = 0x01,
     FIELD_TIME = 0x02,
-    FIELD_REMARK_LENGTH = 0x03,
-    FIELD_REMARK = 0x04,
+    FIELD_TXDATA_LENGTH = 0x03,
+    FIELD_TXDATA = 0x04,
+    FIELD_REMARK_LENGTH = 0x05,
+    FIELD_REMARK = 0x06,
     /** Data Fields - TX Specifics */
     PLACEHOLDER = 0x10,
 
@@ -260,6 +263,9 @@ typedef struct transaction_context {
 
     /** TX Specific fields **/
     tx_fields_t tx_fields;
+
+    unsigned char txData[MAX_REMARK_LENGTH];
+    unsigned char txDataSize;
 
     unsigned char remark[MAX_REMARK_LENGTH];
     unsigned char remarkSize;

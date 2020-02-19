@@ -4,7 +4,7 @@
 void parse_group_common();
 void parse_group_coin_input();
 void parse_group_coin_output();
-
+void parse_group_remark();
 void check_sanity_before_sign();
 
 // Parser Utils

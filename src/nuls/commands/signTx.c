@@ -137,15 +137,19 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
           switch(txContext.tx_parsing_group) {
             case COMMON:
               parse_group_common();
+            /*
             case TX_SPECIFIC:
               if(txContext.tx_parsing_group != TX_SPECIFIC) {
                 THROW(INVALID_STATE);
               }
               tx_parse();
+            */
             case COIN_INPUT:
               parse_group_coin_input();
             case COIN_OUTPUT:
               parse_group_coin_output();
+            case REMARK:
+              parse_group_remark();
             case CHECK_SANITY_BEFORE_SIGN:
               check_sanity_before_sign();
               break;

@@ -5,9 +5,9 @@
    *
    * COMMON
    * - type -> 2 Bytes
-   * - time -> 6 Bytes
-   * - remarkLength -> 1 Byte
-   * - remark -> remarkLength Bytes (max 30 bytes)
+   * - time -> 4 Bytes
+   * - txDataLength -> 1 Byte
+   * - txData -> txDataLength Bytes (max 30 bytes)
    *
    * */
 void parse_group_common() {
@@ -16,7 +16,7 @@ void parse_group_common() {
     THROW(INVALID_STATE);
   }
 
-  uint64_t remarkVarInt;
+  uint64_t txDataVarInt;
 
   switch(txContext.tx_parsing_state) {
 
@@ -33,8 +33,55 @@ void parse_group_common() {
       //no break is intentional
     case FIELD_TIME:
       txContext.tx_parsing_state = FIELD_TIME;
-      is_available_to_parse(6);
-      transaction_offset_increase(6);
+      is_available_to_parse(4);
+      transaction_offset_increase(4);
+      //no break is intentional
+    case FIELD_TXDATA_LENGTH:
+      txContext.tx_parsing_state = FIELD_TXDATA_LENGTH;
+      txDataVarInt = transaction_get_varint();
+      if(txDataVarInt > MAX_TXDATA_LENGTH) {
+        THROW(INVALID_PARAMETER);
+      }
+      txContext.txDataSize = (unsigned char)txDataVarInt;
+      //no break is intentional
+    case FIELD_TXDATA:
+      txContext.tx_parsing_state = FIELD_TXDATA;
+      if (txContext.txDataSize != 0) {
+        is_available_to_parse(txContext.txDataSize);
+        os_memmove(txContext.txDataSize, txContext.bufferPointer, txContext.txDataSize);
+        txContext.txData[txContext.txDataSize] = '\0';
+        transaction_offset_increase(txContext.txDataSize);
+      }
+      txContext.tx_parsing_state = BEGINNING;
+      txContext.tx_parsing_group = COIN_INPUT;
+      break;
+
+    default:
+      THROW(INVALID_STATE);
+  }
+}
+
+/* TX Structure:
+   *
+   * REMARK
+   * - remarkLength -> 1 Byte
+   * - remark -> remarkLength Bytes (max 30 bytes)
+   *
+   * */
+void parse_group_remark() {
+
+  if(txContext.tx_parsing_group != REMARK) {
+    THROW(INVALID_STATE);
+  }
+
+  uint64_t remarkVarInt;
+
+  switch(txContext.tx_parsing_state) {
+
+    case BEGINNING:
+      // Reset transaction state
+      txContext.remainingInputsOutputs = 0;
+      txContext.currentInputOutput = 0;
       //no break is intentional
     case FIELD_REMARK_LENGTH:
       txContext.tx_parsing_state = FIELD_REMARK_LENGTH;
@@ -53,13 +100,14 @@ void parse_group_common() {
         transaction_offset_increase(txContext.remarkSize);
       }
       txContext.tx_parsing_state = BEGINNING;
-      txContext.tx_parsing_group = TX_SPECIFIC;
+      txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
       break;
 
     default:
       THROW(INVALID_STATE);
   }
 }
+
 
 /* TX Structure:
    *
@@ -217,7 +265,7 @@ void parse_group_coin_output() {
         txContext.remainingInputsOutputs--;
         txContext.currentInputOutput++;
         if(txContext.remainingInputsOutputs == 0) {
-          txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
+          txContext.tx_parsing_group = REMARK;
           txContext.tx_parsing_state = BEGINNING;
         } else {
           //Read another output
