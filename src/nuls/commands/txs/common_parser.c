@@ -6,8 +6,6 @@
    * COMMON
    * - type -> 2 Bytes
    * - time -> 4 Bytes
-   * - txDataLength -> 1 Byte
-   * - txData -> txDataLength Bytes (max 30 bytes)
    *
    * */
 void parse_group_common() {

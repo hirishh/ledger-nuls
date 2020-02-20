@@ -76,7 +76,7 @@ void tx_parse_specific_2_transfer() {
   /* TX Structure:
    *
    * TX_SPECIFIC
-   * - reuse PLACEHOLDER for txData, only /w i byte for len = 0
+   * - reuse PLACEHOLDER for txData, only /w 1 byte for len = 0
    * */
 
   //NB: There are no break in this switch. This is intentional.
