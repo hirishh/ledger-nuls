@@ -16,8 +16,6 @@ void parse_group_common() {
     THROW(INVALID_STATE);
   }
 
-  uint64_t txDataVarInt;
-
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
@@ -35,25 +33,8 @@ void parse_group_common() {
       txContext.tx_parsing_state = FIELD_TIME;
       is_available_to_parse(4);
       transaction_offset_increase(4);
-      //no break is intentional
-    case FIELD_TXDATA_LENGTH:
-      txContext.tx_parsing_state = FIELD_TXDATA_LENGTH;
-      txDataVarInt = transaction_get_varint();
-      if(txDataVarInt > MAX_TXDATA_LENGTH) {
-        THROW(INVALID_PARAMETER);
-      }
-      txContext.txDataSize = (unsigned char)txDataVarInt;
-      //no break is intentional
-    case FIELD_TXDATA:
-      txContext.tx_parsing_state = FIELD_TXDATA;
-      if (txContext.txDataSize != 0) {
-        is_available_to_parse(txContext.txDataSize);
-        os_memmove(txContext.txDataSize, txContext.bufferPointer, txContext.txDataSize);
-        txContext.txData[txContext.txDataSize] = '\0';
-        transaction_offset_increase(txContext.txDataSize);
-      }
       txContext.tx_parsing_state = BEGINNING;
-      txContext.tx_parsing_group = COIN_INPUT;
+      txContext.tx_parsing_group = TX_SPECIFIC;
       break;
 
     default:

@@ -56,10 +56,8 @@ enum transaction_parsing_state_e {
     /** Commmon Fields */
     FIELD_TYPE = 0x01,
     FIELD_TIME = 0x02,
-    FIELD_TXDATA_LENGTH = 0x03,
-    FIELD_TXDATA = 0x04,
-    FIELD_REMARK_LENGTH = 0x05,
-    FIELD_REMARK = 0x06,
+    FIELD_REMARK_LENGTH = 0x03,
+    FIELD_REMARK = 0x04,
     /** Data Fields - TX Specifics */
     PLACEHOLDER = 0x10,
 
@@ -263,9 +261,6 @@ typedef struct transaction_context {
 
     /** TX Specific fields **/
     tx_fields_t tx_fields;
-
-    unsigned char txData[MAX_REMARK_LENGTH];
-    unsigned char txDataSize;
 
     unsigned char remark[MAX_REMARK_LENGTH];
     unsigned char remarkSize;

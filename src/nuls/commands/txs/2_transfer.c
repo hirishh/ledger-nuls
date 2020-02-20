@@ -76,24 +76,20 @@ void tx_parse_specific_2_transfer() {
   /* TX Structure:
    *
    * TX_SPECIFIC
-   * - placeholder -> 4 bytes (0xFFFFFFFF)
-   *
+   * - reuse PLACEHOLDER for txData, only /w i byte for len = 0
    * */
-
-  uint32_t placeholder = 0;
 
   //NB: There are no break in this switch. This is intentional.
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
 
-    case PLACEHOLDER:
+    case PLACEHOLDER: //txData null, only has txData len is 0
       txContext.tx_parsing_state = PLACEHOLDER;
-      is_available_to_parse(4);
-      uint32_t placeholder = nuls_read_u32(txContext.bufferPointer, 1, 0);
-      if(placeholder != 0xFFFFFFFF)
+      uint32_t txDataLenInt = transaction_get_varint();
+      if(txDataLenInt != 0) { 
         THROW(INVALID_PARAMETER);
-      transaction_offset_increase(4);
+      }
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
