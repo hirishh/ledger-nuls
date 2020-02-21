@@ -44,9 +44,8 @@ enum transaction_parsing_group_e {
     TX_SPECIFIC = 0x01,
     COIN_INPUT = 0x02,
     COIN_OUTPUT = 0x03,
-    REMARK = 0x04,
-    CHECK_SANITY_BEFORE_SIGN = 0x05,
-    TX_PARSED = 0x06
+    CHECK_SANITY_BEFORE_SIGN = 0x04,
+    TX_PARSED = 0x05
 };
 typedef enum transaction_parsing_group_e transaction_parsing_group_t;
 

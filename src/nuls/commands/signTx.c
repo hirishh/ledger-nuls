@@ -146,8 +146,6 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
               parse_group_coin_input();
             case COIN_OUTPUT:
               parse_group_coin_output();
-            case REMARK:
-              parse_group_remark();
             case CHECK_SANITY_BEFORE_SIGN:
               check_sanity_before_sign();
               break;
