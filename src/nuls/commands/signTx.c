@@ -72,6 +72,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         tx_parse = tx_parse_specific_3_alias;
         tx_end = tx_finalize_3_alias;
         break;
+#if 0
       case TX_TYPE_4_REGISTER_CONSENSUS_NODE:
         tx_parse = tx_parse_specific_4_register_agent;
         tx_end = tx_finalize_4_register_agent;
@@ -104,6 +105,7 @@ void handleSignTxPacket(commPacket_t *packet, commContext_t *context) {
         tx_parse = tx_parse_specific_102_delete_contract;
         tx_end = tx_finalize_102_delete_contract;
         break;
+#endif
       default:
         THROW(NOT_SUPPORTED);
     }

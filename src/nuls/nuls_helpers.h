@@ -16,6 +16,7 @@ unsigned char nuls_int_to_string(unsigned long int number, char *out);
 unsigned char nuls_hex_amount_to_displayable(unsigned char *amount, char *dest);
 unsigned char nuls_encode_varint(unsigned long int value, unsigned char *dest);
 void nuls_double_to_displayable(double f, int ndigits, char *dest);
+uint64_t nuls_read_u64(unsigned char *buffer, unsigned char be, unsigned char skipSign);
 
 
 #endif

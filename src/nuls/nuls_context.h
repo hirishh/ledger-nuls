@@ -225,12 +225,16 @@ typedef struct transaction_context {
     /** State of the transaction parsing, type transaction_parsing_state_t */
     uint8_t tx_parsing_state;
 
+    /** coin data inputs and outputs length for this transaction */
+    unsigned long int txCoinInputsOutputsLength;
+
     /** Remaining number of inputs/outputs to process for this transaction */
     unsigned long int remainingInputsOutputs;
 
     /** Index of the currently processed input/output for this transaction */
     unsigned long int currentInputOutput;
 
+    /** obsoleted*/
     /** Length of the currently processed input/output for this transaction */
     unsigned long int currentInputOutputOwnerLength;
 
@@ -264,9 +268,20 @@ typedef struct transaction_context {
     unsigned char remark[MAX_REMARK_LENGTH];
     unsigned char remarkSize;
 
+    unsigned char inputAddress[ADDRESS_LENGTH];
+    uint16_t inputChainId;
+    uint16_t inputAssetId;
+    unsigned char inputAmount[AMOUNT_LENGTH];
+    unsigned char inputNonceSize;
+    unsigned char inputNonce[MAX_NONCE_LENGTH];
+    unsigned char inputLocked;
+
     uint8_t nOut;
     unsigned char outputAddress[MAX_OUTPUT_TO_CHECK][ADDRESS_LENGTH];
+    uint16_t outputChainId;
+    uint16_t outputAssetId;
     unsigned char outputAmount[MAX_OUTPUT_TO_CHECK][AMOUNT_LENGTH];
+    uint64_t outputLockTime;
     uint8_t nOutCursor; //Used during UX
 
     bool changeFound;

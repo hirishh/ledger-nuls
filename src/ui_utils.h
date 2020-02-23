@@ -3,7 +3,7 @@
 
 #include "os_io_seproxyhal.h"
 
-extern char lineBuffer[50];
+extern char lineBuffer[100];
 extern unsigned int currentStep;
 extern unsigned int totalSteps;
 #define IS_PRINTABLE(c) ((c >= 0x20 && c <= 0x7e) || (c >= 0x80 && c <= 0xFF))

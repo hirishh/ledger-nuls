@@ -76,16 +76,16 @@ void tx_parse_specific_3_alias() {
     case _3_ALIAS_ADDRESS_LENGTH:
       txContext.tx_parsing_state = _3_ALIAS_ADDRESS_LENGTH;
       tmpVarInt = transaction_get_varint();
-      if(tmpVarInt != ADDRESS_LENGTH) {
+      if(tmpVarInt > ADDRESS_LENGTH) {
         THROW(INVALID_PARAMETER);
       }
 
     case _3_ALIAS_ADDRESS:
       txContext.tx_parsing_state = _3_ALIAS_ADDRESS;
-      is_available_to_parse(ADDRESS_LENGTH);
+      is_available_to_parse(tmpVarInt);
       //Save the address
-      os_memmove(cc->address, txContext.bufferPointer, ADDRESS_LENGTH);
-      transaction_offset_increase(ADDRESS_LENGTH);
+      os_memmove(cc->address, txContext.bufferPointer, tmpVarInt);
+      transaction_offset_increase(tmpVarInt);
 
 
     case _3_ALIAS_ALIAS_LENGTH:
