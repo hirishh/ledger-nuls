@@ -60,7 +60,7 @@ unsigned int verify_address_ui_button(unsigned int button_mask, unsigned int but
 }
 
 static void ui_address(void) {
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   os_memmove(lineBuffer, &reqContext.accountFrom.addressBase58, 32);
   lineBuffer[32] = '\0';
   UX_DISPLAY(verify_address_ui, NULL);

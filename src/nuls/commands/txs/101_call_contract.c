@@ -39,7 +39,7 @@ static tx_type_specific_101_call_contract_t *cc = &(txContext.tx_fields.call_con
 
 static void uiProcessor_101_call_contract(uint8_t step) {
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Call contract from

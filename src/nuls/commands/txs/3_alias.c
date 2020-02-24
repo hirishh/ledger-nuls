@@ -29,7 +29,7 @@ static tx_type_specific_3_alias_t *cc = &(txContext.tx_fields.alias);
 
 static void uiProcessor_3_alias(uint8_t step) {
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Alias for address

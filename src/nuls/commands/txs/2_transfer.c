@@ -33,7 +33,7 @@ static uint8_t stepProcessor_2_transfer(uint8_t step) {
 static void uiProcessor_2_transfer(uint8_t step) {
   uint8_t addressToShow[32] = {0};
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Send From

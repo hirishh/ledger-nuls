@@ -33,7 +33,7 @@ static tx_type_specific_5_join_consensus_t *cc = &(txContext.tx_fields.join_cons
 
 static void uiProcessor_5_join_consensus(uint8_t step) {
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Join Consensus for address
@@ -49,7 +49,7 @@ static void uiProcessor_5_join_consensus(uint8_t step) {
       //Agent Hash
       //snprintf(lineBuffer, 50, "%.*X", cc->agentHash);
       //os_memmove(lineBuffer + 46, "...\0", 4);
-      snprintf(lineBuffer, 50, "%.*H...%.*H",
+      snprintf(lineBuffer, sizeof(lineBuffer), "%.*H...%.*H",
               4, cc->agentHash,
               4, cc->agentHash + HASH_LENGTH - 4);
       break;
