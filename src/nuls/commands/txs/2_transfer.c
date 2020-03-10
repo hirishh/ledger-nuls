@@ -103,11 +103,6 @@ void tx_parse_specific_2_transfer() {
 
 void tx_finalize_2_transfer() {
   os_memmove(txContext.amountSpent, txContext.totalOutputAmount, AMOUNT_LENGTH);
-  if(txContext.changeFound) {
-    if (transaction_amount_sub_be(txContext.amountSpent, txContext.amountSpent, txContext.changeAmount)) {
-      THROW(EXCEPTION_OVERFLOW);
-    }
-  }
 
   ux.elements = ui_2_transfer_nano;
   ux.elements_count = 13;

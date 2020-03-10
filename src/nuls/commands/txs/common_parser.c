@@ -116,7 +116,7 @@ void parse_group_coin_input() {
         txContext.inputAssetId = nuls_read_u16(txContext.bufferPointer, 0, 0);
         transaction_offset_increase(2);
 
-        //coinfrom amount
+        //coinfrom amount with fee
         is_available_to_parse(AMOUNT_LENGTH);
         nuls_swap_bytes(txContext.totalInputAmount, txContext.bufferPointer, AMOUNT_LENGTH);
         transaction_offset_increase(AMOUNT_LENGTH);
@@ -126,7 +126,7 @@ void parse_group_coin_input() {
         if(nonceLen > MAX_NONCE_LENGTH) {
           THROW(INVALID_STATE);
         }  
-        is_available_to_parse(MAX_NONCE_LENGTH);
+        is_available_to_parse(nonceLen);
         txContext.inputNonceSize = nonceLen;
         os_memmove(txContext.inputNonce, txContext.bufferPointer, txContext.inputNonceSize);
         transaction_offset_increase(nonceLen);
@@ -146,68 +146,6 @@ void parse_group_coin_input() {
       default:
         THROW(INVALID_STATE);
     }
-#if 0
-  do {
-    switch(txContext.tx_parsing_state) {
-
-      case BEGINNING:
-        // Read inputs and outputs length
-        txContext.txCoinInputsOutputsLength = transaction_get_varint();
-
-
-        // Read how many inputs
-        txContext.remainingInputsOutputs = transaction_get_varint(); //throw if it can't.
-        txContext.currentInputOutput = 0;
-        // only one coin from 
-        if(txContext.remainingInputsOutputs != 1) {
-          THROW(INVALID_STATE);
-        }
-
-        if(txContext.remainingInputsOutputs == 0) {
-          //No input (???), let's check outputs
-          txContext.tx_parsing_group = COIN_OUTPUT;
-          txContext.tx_parsing_state = BEGINNING;
-          break; //exit from this switch
-        }
-
-      /*
-      case COIN_OWNER_DATA_LENGTH:
-        txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
-        txContext.currentInputOutputOwnerLength = transaction_get_varint();
-      */
-      case COIN_DATA:
-        txContext.tx_parsing_state = COIN_DATA;
-        //Check if we can parse whole input (owner + amount + locktime)
-        //is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
-        //now we have whole input
-        //transaction_offset_increase(txContext.currentInputOutputOwnerLength);
-        //save amount
-        nuls_swap_bytes(amount, txContext.bufferPointer, AMOUNT_LENGTH);
-
-        if (transaction_amount_add_be(txContext.totalInputAmount, txContext.totalInputAmount, amount)) {
-          THROW(EXCEPTION_OVERFLOW);
-        }
-        transaction_offset_increase(AMOUNT_LENGTH);
-        transaction_offset_increase(LOCKTIME_LENGTH);
-
-        //update indexes
-        txContext.remainingInputsOutputs--;
-        txContext.currentInputOutput++;
-        if(txContext.remainingInputsOutputs == 0) {
-          txContext.tx_parsing_group = COIN_OUTPUT;
-          txContext.tx_parsing_state = BEGINNING;
-        } else {
-          //Read another input
-          txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
-        }
-        break;
-
-      default:
-        THROW(INVALID_STATE);
-    }
-  }
-  while(txContext.remainingInputsOutputs != 0);
-#endif
 }
 
 void parse_group_coin_output() {
@@ -264,18 +202,7 @@ void parse_group_coin_output() {
         is_available_to_parse(LOCKTIME_LENGTH);
         txContext.outputLockTime = nuls_read_u64(txContext.bufferPointer, 0, 0);
         transaction_offset_increase(LOCKTIME_LENGTH);
-
-        //Do check about changeAddress
-        //If is a change address -> remove from "txContext.outputAddress" and do "only-one" check
-        if(reqContext.accountChange.pathLength > 0) { // -> user specified accountChange in input
-            if(nuls_secure_memcmp(txContext.outputAddress[txContext.nOut-1], reqContext.accountChange.address, ADDRESS_LENGTH) == 0) {
-              txContext.changeFound = true;
-            }
-            else {
-              THROW(EXCEPTION_OVERFLOW);
-            }
-        }
-
+        txContext.changeFound = true;
         //update indexes
         txContext.remainingInputsOutputs--;
         txContext.currentInputOutput++;
@@ -285,112 +212,10 @@ void parse_group_coin_output() {
 
       default:
         THROW(INVALID_STATE);
-    }
-
-
-
-#if 0
-  bool isOpReturnOutput = false;
-
-  do {
-    switch(txContext.tx_parsing_state) {
-
-      case BEGINNING:
-        // Read how many outputs
-        txContext.remainingInputsOutputs = transaction_get_varint(); //throw if it can't.
-
-        if(txContext.remainingInputsOutputs > MAX_OUTPUT_TO_CHECK) {
-          THROW(INVALID_PARAMETER);
-        }
-
-        txContext.currentInputOutput = 0;
-        txContext.changeFound = false;
-        txContext.nOut = 0;
-        if(txContext.remainingInputsOutputs == 0) {
-          //No output (???), let's check outputs
-          txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
-          txContext.tx_parsing_state = BEGINNING;
-          break; //exit from this switch
-        }
-
-      case COIN_OWNER_DATA_LENGTH:
-        txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
-        isOpReturnOutput = false;
-        txContext.currentInputOutputOwnerLength = transaction_get_varint();
-
-      case COIN_DATA:
-        txContext.tx_parsing_state = COIN_DATA;
-        //Check if we can parse whole input (owner + amount + locktime)
-        is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
-
-        //Check if is an op_return script
-        if(is_op_return_script(txContext.bufferPointer)) {
-            isOpReturnOutput = true;
-        } else {
-            get_address_from_owner(
-                    txContext.bufferPointer,
-                    txContext.currentInputOutputOwnerLength,
-                    txContext.outputAddress[txContext.nOut]);
-        }
-
-        //Owner
-        transaction_offset_increase(txContext.currentInputOutputOwnerLength);
-        //Amount
-        nuls_swap_bytes(txContext.outputAmount[txContext.nOut], txContext.bufferPointer, AMOUNT_LENGTH);
-        transaction_offset_increase(AMOUNT_LENGTH);
-        //Locktime
-        transaction_offset_increase(LOCKTIME_LENGTH);
-
-        //Add to totalOutputAmount
-        if(transaction_amount_add_be(txContext.totalOutputAmount, txContext.totalOutputAmount, txContext.outputAmount[txContext.nOut])) {
-          THROW(EXCEPTION_OVERFLOW);
-        }
-
-        if(!isOpReturnOutput) {
-            txContext.nOut++;
-
-            //Do check about changeAddress
-            //If is a change address -> remove from "txContext.outputAddress" and do "only-one" check
-            if(reqContext.accountChange.pathLength > 0) { // -> user specified accountChange in input
-
-                if(nuls_secure_memcmp(txContext.outputAddress[txContext.nOut-1], reqContext.accountChange.address, ADDRESS_LENGTH) == 0) {
-                    txContext.changeFound = true;
-                    //Add to changeAmount
-                    if (transaction_amount_add_be(txContext.changeAmount, txContext.changeAmount, txContext.outputAmount[txContext.nOut-1])) {
-                        THROW(EXCEPTION_OVERFLOW);
-                    }
-                    //Remove from "toShow"
-                    txContext.nOut--;
-                }
-            }
-        }
-
-        //update indexes
-        txContext.remainingInputsOutputs--;
-        txContext.currentInputOutput++;
-        if(txContext.remainingInputsOutputs == 0) {
-          txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
-          txContext.tx_parsing_state = BEGINNING;
-        } else {
-          //Read another output
-          txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
-        }
-        break;
-
-      default:
-        THROW(INVALID_STATE);
-    }
   }
-  while(txContext.remainingInputsOutputs != 0);
-#endif
   //Calculate fees (input - output)
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
     THROW(EXCEPTION_OVERFLOW);
-  }
-
-  //Throw if change account is provided but change not found in output
-  if(reqContext.accountChange.pathLength > 0 && !txContext.changeFound) {
-    THROW(INVALID_PARAMETER);
   }
 }
 
