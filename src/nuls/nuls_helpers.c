@@ -73,6 +73,25 @@ unsigned long int nuls_read_u32(unsigned char *buffer, unsigned char be, unsigne
   return result;
 }
 
+uint64_t nuls_read_u64(unsigned char *buffer, unsigned char be, unsigned char skipSign) {
+  unsigned char i;
+  uint64_t result = 0;
+  unsigned char shiftValue = (be ? 56 : 0);
+  for (i = 0; i < 8; i++) {
+    unsigned char x = (unsigned char)buffer[i];
+    if ((i == 0) && skipSign) {
+      x &= 0x7f;
+    }
+    result += ((uint64_t)x) << shiftValue;
+    if (be) {
+      shiftValue -= 8;
+    } else {
+      shiftValue += 8;
+    }
+  }
+  return result;
+}
+
 unsigned char nuls_secure_memcmp(void WIDE *buf1, void WIDE *buf2, unsigned short length) {
   unsigned char error = 0;
   while (length--) {
@@ -108,7 +127,25 @@ unsigned char nuls_int_to_string(unsigned long int amount, char *out) {
   return i;
 }
 
+unsigned char nuls_bin_to_hex(unsigned char *in, size_t in_size, char *out, size_t out_size) {
+
+    unsigned char out_len = in_size * 2;
+    if (out_size < out_len + 1) THROW(INVALID_PARAMETER);
+
+    unsigned char *src = in;
+    for (size_t i = 0; i < in_size; i++) {
+        out[i*2]   = "0123456789ABCDEF"[src[i] >> 4];
+        out[i*2+1] = "0123456789ABCDEF"[src[i] & 0x0F];
+    }
+    return out_len;
+}
+
 unsigned char nuls_hex_amount_to_displayable(unsigned char *amount, char *dest) {
+
+  if ((!amount) || (!dest)) THROW(INVALID_PARAMETER);
+
+  return nuls_bin_to_hex(amount, 32, dest, 100);
+#if 0
   unsigned char LOOP1 = 13;
   unsigned char LOOP2 = 8;
   unsigned short scratch[SCRATCH_SIZE];
@@ -177,6 +214,7 @@ unsigned char nuls_hex_amount_to_displayable(unsigned char *amount, char *dest) 
     dest[targetOffset++] = scratch[offset++] + '0';
   }
   return targetOffset;
+#endif
 }
 
 unsigned char nuls_encode_varint(unsigned long int value, unsigned char *dest) {

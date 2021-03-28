@@ -29,7 +29,7 @@ static tx_type_specific_10_data_t *cc = &(txContext.tx_fields.data);
 
 static void uiProcessor_10_data(uint8_t step) {
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Push Data From
@@ -40,7 +40,7 @@ static void uiProcessor_10_data(uint8_t step) {
       //Data Hash
       //snprintf(lineBuffer, 50, "%.*X", cc->digest);
       //os_memmove(lineBuffer + 46, "...\0", 4);
-      snprintf(lineBuffer, 50, "%.*H...%.*H",
+      snprintf(lineBuffer, sizeof(lineBuffer), "%.*H...%.*H",
               4, cc->digest,
               4, cc->digest + DIGEST_LENGTH - 4);
       break;

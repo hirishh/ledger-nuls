@@ -29,7 +29,7 @@ static tx_type_specific_9_unregister_agent_t *cc = &(txContext.tx_fields.unregis
 
 static void uiProcessor_9_unregister_agent(uint8_t step) {
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Join Consensus for address
@@ -40,7 +40,7 @@ static void uiProcessor_9_unregister_agent(uint8_t step) {
       //TX Hash
       //snprintf(lineBuffer, 50, "%.*X", txContext.tx_fields.join_consensus.agentHash);
       //os_memmove(lineBuffer + 46, "...\0", 4);
-      snprintf(lineBuffer, 50, "%.*H...%.*H",
+      snprintf(lineBuffer, sizeof(lineBuffer), "%.*H...%.*H",
               4, cc->txHash,
               4, cc->txHash + HASH_LENGTH - 4);
       break;

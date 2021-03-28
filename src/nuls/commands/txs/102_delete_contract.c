@@ -32,7 +32,7 @@ static tx_type_specific_102_delete_contract_t *cc = &(txContext.tx_fields.delete
 
 static void uiProcessor_102_delete_contract(uint8_t step) {
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Call contract from

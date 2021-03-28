@@ -39,7 +39,7 @@ static tx_type_specific_4_register_agent_t *cc = &(txContext.tx_fields.register_
 
 static void uiProcessor_4_register_agent(uint8_t step) {
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Join Consensus for address

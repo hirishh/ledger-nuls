@@ -3,7 +3,7 @@
 /**
  * Line buffer (50chars)
  */
-char lineBuffer[50];
+char lineBuffer[100];
 
 unsigned int currentStep = 0;
 unsigned int totalSteps = 0;

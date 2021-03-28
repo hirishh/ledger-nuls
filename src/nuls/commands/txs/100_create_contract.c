@@ -39,7 +39,7 @@ static tx_type_specific_100_create_contract_t *cc = &(txContext.tx_fields.create
 
 static void uiProcessor_100_create_contract(uint8_t step) {
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Call contract from
@@ -68,7 +68,7 @@ static void uiProcessor_100_create_contract(uint8_t step) {
       break;
     case 6:
       //Code Hash
-      snprintf(lineBuffer, 50, "%.*H...%.*H",
+      snprintf(lineBuffer, sizeof(lineBuffer), "%.*H...%.*H",
               4, cc->codeDigest,
               4, cc->codeDigest + DIGEST_LENGTH - 4);
       break;

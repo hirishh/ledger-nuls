@@ -33,7 +33,7 @@ static uint8_t stepProcessor_2_transfer(uint8_t step) {
 static void uiProcessor_2_transfer(uint8_t step) {
   uint8_t addressToShow[32] = {0};
   unsigned short amountTextSize;
-  os_memset(lineBuffer, 0, 50);
+  os_memset(lineBuffer, 0, sizeof(lineBuffer));
   switch (step) {
     case 1:
       //Send From
@@ -76,24 +76,20 @@ void tx_parse_specific_2_transfer() {
   /* TX Structure:
    *
    * TX_SPECIFIC
-   * - placeholder -> 4 bytes (0xFFFFFFFF)
-   *
+   * - reuse PLACEHOLDER for txData, only /w 1 byte for len = 0
    * */
-
-  uint32_t placeholder = 0;
 
   //NB: There are no break in this switch. This is intentional.
   switch(txContext.tx_parsing_state) {
 
     case BEGINNING:
 
-    case PLACEHOLDER:
+    case PLACEHOLDER: //txData null, only has txData len is 0
       txContext.tx_parsing_state = PLACEHOLDER;
-      is_available_to_parse(4);
-      uint32_t placeholder = nuls_read_u32(txContext.bufferPointer, 1, 0);
-      if(placeholder != 0xFFFFFFFF)
+      uint32_t txDataLenInt = transaction_get_varint();
+      if(txDataLenInt != 0) { 
         THROW(INVALID_PARAMETER);
-      transaction_offset_increase(4);
+      }
 
       //It's time for CoinData
       txContext.tx_parsing_group = COIN_INPUT;
@@ -107,11 +103,6 @@ void tx_parse_specific_2_transfer() {
 
 void tx_finalize_2_transfer() {
   os_memmove(txContext.amountSpent, txContext.totalOutputAmount, AMOUNT_LENGTH);
-  if(txContext.changeFound) {
-    if (transaction_amount_sub_be(txContext.amountSpent, txContext.amountSpent, txContext.changeAmount)) {
-      THROW(EXCEPTION_OVERFLOW);
-    }
-  }
 
   ux.elements = ui_2_transfer_nano;
   ux.elements_count = 13;

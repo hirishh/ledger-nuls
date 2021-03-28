@@ -5,9 +5,7 @@
    *
    * COMMON
    * - type -> 2 Bytes
-   * - time -> 6 Bytes
-   * - remarkLength -> 1 Byte
-   * - remark -> remarkLength Bytes (max 30 bytes)
+   * - time -> 4 Bytes
    *
    * */
 void parse_group_common() {
@@ -33,8 +31,8 @@ void parse_group_common() {
       //no break is intentional
     case FIELD_TIME:
       txContext.tx_parsing_state = FIELD_TIME;
-      is_available_to_parse(6);
-      transaction_offset_increase(6);
+      is_available_to_parse(4);
+      transaction_offset_increase(4);
       //no break is intentional
     case FIELD_REMARK_LENGTH:
       txContext.tx_parsing_state = FIELD_REMARK_LENGTH;
@@ -81,55 +79,73 @@ void parse_group_coin_input() {
   }
 
   unsigned char amount[AMOUNT_LENGTH];
-
-  do {
-    switch(txContext.tx_parsing_state) {
+  switch(txContext.tx_parsing_state) {
 
       case BEGINNING:
+        // Read inputs and outputs length
+        // TODO: to verify data length
+        txContext.txCoinInputsOutputsLength = transaction_get_varint();
+
         // Read how many inputs
         txContext.remainingInputsOutputs = transaction_get_varint(); //throw if it can't.
         txContext.currentInputOutput = 0;
-        if(txContext.remainingInputsOutputs == 0) {
-          //No input (???), let's check outputs
-          txContext.tx_parsing_group = COIN_OUTPUT;
-          txContext.tx_parsing_state = BEGINNING;
-          break; //exit from this switch
+        // should be one coinfrom
+        if(txContext.remainingInputsOutputs != 1) {
+          THROW(INVALID_STATE);
         }
-      case COIN_OWNER_DATA_LENGTH:
-        txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
-        txContext.currentInputOutputOwnerLength = transaction_get_varint();
+
       case COIN_DATA:
         txContext.tx_parsing_state = COIN_DATA;
-        //Check if we can parse whole input (owner + amount + locktime)
-        is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
-        //now we have whole input
-        transaction_offset_increase(txContext.currentInputOutputOwnerLength);
-        //save amount
-        nuls_swap_bytes(amount, txContext.bufferPointer, AMOUNT_LENGTH);
 
-        if (transaction_amount_add_be(txContext.totalInputAmount, txContext.totalInputAmount, amount)) {
-          THROW(EXCEPTION_OVERFLOW);
+        // coinfrom address
+        uint32_t addrLen = transaction_get_varint();
+        if(addrLen > ADDRESS_LENGTH) {
+          THROW(INVALID_STATE);
         }
+        is_available_to_parse(addrLen);
+        os_memmove(txContext.inputAddress, txContext.bufferPointer, addrLen);
+        transaction_offset_increase(addrLen);
+
+        // coinfrom chainid
+        is_available_to_parse(2);
+        txContext.inputChainId = nuls_read_u16(txContext.bufferPointer, 0, 0);
+        transaction_offset_increase(2);
+
+        //coinfrom assetid
+        is_available_to_parse(2);
+        txContext.inputAssetId = nuls_read_u16(txContext.bufferPointer, 0, 0);
+        transaction_offset_increase(2);
+
+        //coinfrom amount with fee
+        is_available_to_parse(AMOUNT_LENGTH);
+        nuls_swap_bytes(txContext.totalInputAmount, txContext.bufferPointer, AMOUNT_LENGTH);
         transaction_offset_increase(AMOUNT_LENGTH);
-        transaction_offset_increase(LOCKTIME_LENGTH);
+
+        //coinfrom nonce
+        uint32_t nonceLen = transaction_get_varint();
+        if(nonceLen > MAX_NONCE_LENGTH) {
+          THROW(INVALID_STATE);
+        }  
+        is_available_to_parse(nonceLen);
+        txContext.inputNonceSize = nonceLen;
+        os_memmove(txContext.inputNonce, txContext.bufferPointer, txContext.inputNonceSize);
+        transaction_offset_increase(nonceLen);
+
+        //coinfrom locked
+        is_available_to_parse(1);
+        txContext.inputLocked = *txContext.bufferPointer;
+        transaction_offset_increase(1);
 
         //update indexes
         txContext.remainingInputsOutputs--;
         txContext.currentInputOutput++;
-        if(txContext.remainingInputsOutputs == 0) {
-          txContext.tx_parsing_group = COIN_OUTPUT;
-          txContext.tx_parsing_state = BEGINNING;
-        } else {
-          //Read another input
-          txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
-        }
+        txContext.tx_parsing_group = COIN_OUTPUT;
+        txContext.tx_parsing_state = BEGINNING;
         break;
 
       default:
         THROW(INVALID_STATE);
     }
-  }
-  while(txContext.remainingInputsOutputs != 0);
 }
 
 void parse_group_coin_output() {
@@ -138,107 +154,68 @@ void parse_group_coin_output() {
     THROW(INVALID_STATE);
   }
 
-  bool isOpReturnOutput = false;
-
-  do {
-    switch(txContext.tx_parsing_state) {
+  switch(txContext.tx_parsing_state) {
 
       case BEGINNING:
         // Read how many outputs
         txContext.remainingInputsOutputs = transaction_get_varint(); //throw if it can't.
 
-        if(txContext.remainingInputsOutputs > MAX_OUTPUT_TO_CHECK) {
-          THROW(INVALID_PARAMETER);
+        // should be one cointo
+        if(txContext.remainingInputsOutputs != 1) {
+          THROW(INVALID_STATE);
         }
 
         txContext.currentInputOutput = 0;
         txContext.changeFound = false;
-        txContext.nOut = 0;
-        if(txContext.remainingInputsOutputs == 0) {
-          //No output (???), let's check outputs
-          txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
-          txContext.tx_parsing_state = BEGINNING;
-          break; //exit from this switch
-        }
-
-      case COIN_OWNER_DATA_LENGTH:
-        txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
-        isOpReturnOutput = false;
-        txContext.currentInputOutputOwnerLength = transaction_get_varint();
+        txContext.nOut = 1;
 
       case COIN_DATA:
         txContext.tx_parsing_state = COIN_DATA;
-        //Check if we can parse whole input (owner + amount + locktime)
-        is_available_to_parse(txContext.currentInputOutputOwnerLength + AMOUNT_LENGTH + LOCKTIME_LENGTH);
 
-        //Check if is an op_return script
-        if(is_op_return_script(txContext.bufferPointer)) {
-            isOpReturnOutput = true;
-        } else {
-            get_address_from_owner(
-                    txContext.bufferPointer,
-                    txContext.currentInputOutputOwnerLength,
-                    txContext.outputAddress[txContext.nOut]);
+        // cointo address
+        uint32_t addrLen = transaction_get_varint();
+        if(addrLen > ADDRESS_LENGTH) {
+          THROW(INVALID_STATE);
         }
+        is_available_to_parse(addrLen);
+        os_memmove(&txContext.outputAddress[0], txContext.bufferPointer, addrLen);
+        transaction_offset_increase(addrLen);
 
-        //Owner
-        transaction_offset_increase(txContext.currentInputOutputOwnerLength);
-        //Amount
-        nuls_swap_bytes(txContext.outputAmount[txContext.nOut], txContext.bufferPointer, AMOUNT_LENGTH);
+        // cointo chainid
+        is_available_to_parse(2);
+        txContext.outputChainId = nuls_read_u16(txContext.bufferPointer, 0, 0);
+        transaction_offset_increase(2);
+
+        //cointo assetid
+        is_available_to_parse(2);
+        txContext.outputAssetId = nuls_read_u16(txContext.bufferPointer, 0, 0);
+        transaction_offset_increase(2);
+
+        //cointo amount
+        is_available_to_parse(AMOUNT_LENGTH);
+        nuls_swap_bytes(txContext.totalOutputAmount, txContext.bufferPointer, AMOUNT_LENGTH);
+        nuls_swap_bytes(&txContext.outputAmount[0], txContext.bufferPointer, AMOUNT_LENGTH);
+        nuls_swap_bytes(txContext.changeAmount, txContext.bufferPointer, AMOUNT_LENGTH);
         transaction_offset_increase(AMOUNT_LENGTH);
-        //Locktime
+
+        //cointo locktime
+        is_available_to_parse(LOCKTIME_LENGTH);
+        txContext.outputLockTime = nuls_read_u64(txContext.bufferPointer, 0, 0);
         transaction_offset_increase(LOCKTIME_LENGTH);
-
-        //Add to totalOutputAmount
-        if(transaction_amount_add_be(txContext.totalOutputAmount, txContext.totalOutputAmount, txContext.outputAmount[txContext.nOut])) {
-          THROW(EXCEPTION_OVERFLOW);
-        }
-
-        if(!isOpReturnOutput) {
-            txContext.nOut++;
-
-            //Do check about changeAddress
-            //If is a change address -> remove from "txContext.outputAddress" and do "only-one" check
-            if(reqContext.accountChange.pathLength > 0) { // -> user specified accountChange in input
-
-                if(nuls_secure_memcmp(txContext.outputAddress[txContext.nOut-1], reqContext.accountChange.address, ADDRESS_LENGTH) == 0) {
-                    txContext.changeFound = true;
-                    //Add to changeAmount
-                    if (transaction_amount_add_be(txContext.changeAmount, txContext.changeAmount, txContext.outputAmount[txContext.nOut-1])) {
-                        THROW(EXCEPTION_OVERFLOW);
-                    }
-                    //Remove from "toShow"
-                    txContext.nOut--;
-                }
-            }
-        }
-
+        txContext.changeFound = true;
         //update indexes
         txContext.remainingInputsOutputs--;
         txContext.currentInputOutput++;
-        if(txContext.remainingInputsOutputs == 0) {
-          txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
-          txContext.tx_parsing_state = BEGINNING;
-        } else {
-          //Read another output
-          txContext.tx_parsing_state = COIN_OWNER_DATA_LENGTH;
-        }
+        txContext.tx_parsing_group = CHECK_SANITY_BEFORE_SIGN;
+        txContext.tx_parsing_state = BEGINNING;
         break;
 
       default:
         THROW(INVALID_STATE);
-    }
   }
-  while(txContext.remainingInputsOutputs != 0);
-
   //Calculate fees (input - output)
   if (transaction_amount_sub_be(txContext.fees, txContext.totalInputAmount, txContext.totalOutputAmount)) {
     THROW(EXCEPTION_OVERFLOW);
-  }
-
-  //Throw if change account is provided but change not found in output
-  if(reqContext.accountChange.pathLength > 0 && !txContext.changeFound) {
-    THROW(INVALID_PARAMETER);
   }
 }
 
@@ -335,10 +312,10 @@ void get_address_from_owner(unsigned char *owner, unsigned long int ownerLength,
 unsigned char transaction_amount_add_be(unsigned char *target, unsigned char *a, unsigned char *b) {
   unsigned char carry = 0;
   unsigned char i;
-  for (i = 0; i < 8; i++) {
-    unsigned short val = a[8 - 1 - i] + b[8 - 1 - i] + (carry ? 1 : 0);
+  for (i = 0; i < 32; i++) {
+    unsigned short val = a[32 - 1 - i] + b[32 - 1 - i] + (carry ? 1 : 0);
     carry = (val > 255);
-    target[8 - 1 - i] = (val & 255);
+    target[32 - 1 - i] = (val & 255);
   }
   return carry;
 }
@@ -346,9 +323,9 @@ unsigned char transaction_amount_add_be(unsigned char *target, unsigned char *a,
 unsigned char transaction_amount_sub_be(unsigned char *target, unsigned char *a, unsigned char *b) {
   unsigned char borrow = 0;
   unsigned char i;
-  for (i = 0; i < 8; i++) {
-    unsigned short tmpA = a[8 - 1 - i];
-    unsigned short tmpB = b[8 - 1 - i];
+  for (i = 0; i < 32; i++) {
+    unsigned short tmpA = a[32 - 1 - i];
+    unsigned short tmpB = b[32 - 1 - i];
     if (borrow) {
       if (tmpA <= tmpB) {
         tmpA += (255 + 1) - 1;
@@ -361,7 +338,7 @@ unsigned char transaction_amount_sub_be(unsigned char *target, unsigned char *a,
       borrow = 1;
       tmpA += 255 + 1;
     }
-    target[8 - 1 - i] = (unsigned char)(tmpA - tmpB);
+    target[32 - 1 - i] = (unsigned char)(tmpA - tmpB);
   }
   return borrow;
 }
